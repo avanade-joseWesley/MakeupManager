@@ -85,7 +85,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors bg-gray-50 focus:bg-white"
+                className="w-full px-4 py-3 text-base text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors bg-gray-50 focus:bg-white placeholder-gray-500"
                 placeholder="seu@email.com"
               />
             </div>
@@ -102,7 +102,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors bg-gray-50 focus:bg-white"
+                  className="w-full px-4 py-3 pr-12 text-base text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors bg-gray-50 focus:bg-white placeholder-gray-500"
                   placeholder="••••••••"
                   minLength={6}
                 />

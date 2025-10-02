@@ -1,8 +1,48 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from './lib/supabase'
+import { LoginForm } from './components/LoginForm'
+import type { User } from '@supabase/supabase-js'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Verificar se há um usuário logado
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    // Escutar mudanças de autenticação
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <LoginForm onSuccess={() => {}} />
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
@@ -40,30 +80,31 @@ function App() {
             </div>
           </div>
 
-          {/* Counter Test */}
+          {/* User Info */}
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">🧪 Teste de Funcionalidade</h2>
-            <div className="flex items-center justify-center space-x-4">
-              <button 
-                onClick={() => setCount(count - 1)}
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors"
+            <h2 className="text-2xl font-bold text-gray-800 mb-6">👤 Usuário Logado</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Email:</span>
+                <span className="font-medium">{user.email}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">ID:</span>
+                <span className="font-mono text-sm text-gray-500">{user.id.substring(0, 8)}...</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Último login:</span>
+                <span className="text-sm text-gray-500">
+                  {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('pt-BR') : 'N/A'}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full mt-4 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors"
               >
-                -
-              </button>
-              <span className="text-4xl font-bold text-gray-800 min-w-[100px]">
-                {count}
-              </span>
-              <button 
-                onClick={() => setCount(count + 1)}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors"
-              >
-                +
+                Sair
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-4">
-              {count === 0 ? '🎯 Estado inicial!' : 
-               count > 0 ? '📈 Contagem positiva!' : '📉 Contagem negativa!'}
-            </p>
           </div>
 
           {/* Tech Stack */}

@@ -10,6 +10,7 @@ interface UserProfile {
   id: string
   full_name: string
   phone: string
+  email: string
   bio: string
   address: string
   instagram: string
@@ -55,6 +56,7 @@ export function Settings({ user, onBack }: SettingsProps) {
     id: user.id,
     full_name: '',
     phone: '',
+    email: '',
     bio: '',
     address: '',
     instagram: '',
@@ -390,98 +392,125 @@ export function Settings({ user, onBack }: SettingsProps) {
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
-          <div className="space-y-4">
-            <div className="bg-white p-6 rounded-2xl shadow-xl space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          <div className="space-y-6">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
+              <h2 className="text-lg font-semibold text-gray-800 mb-6">
                 👤 Informações Pessoais
               </h2>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nome Completo
-              </label>
-              <input
-                type="text"
-                value={profile.full_name}
-                onChange={(e) => setProfile({...profile, full_name: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Seu nome completo"
-              />
-            </div>
+              
+              <div className="space-y-6">
+                {/* Grid para campos principais */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nome Completo
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.full_name}
+                      onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      placeholder="Seu nome completo"
+                    />
+                  </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Telefone/WhatsApp
-              </label>
-              <input
-                type="tel"
-                value={profile.phone}
-                onChange={(e) => setProfile({...profile, phone: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="11987654321"
-              />
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Telefone/WhatsApp
+                    </label>
+                    <input
+                      type="tel"
+                      value={profile.phone}
+                      onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      placeholder="11987654321"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bio/Apresentação
-              </label>
-              <textarea
-                value={profile.bio}
-                onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
-                placeholder="Conte um pouco sobre você e sua experiência..."
-              />
-            </div>
+                {/* Email - campo opcional */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span className="text-gray-400 text-xs">(opcional)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({...profile, email: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    placeholder="seu@email.com"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Endereço Base
-              </label>
-              <input
-                type="text"
-                value={profile.address}
-                onChange={(e) => setProfile({...profile, address: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="Rua, número, bairro, cidade"
-              />
-            </div>
+                {/* Bio - ocupa toda a largura */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Bio/Apresentação
+                  </label>
+                  <textarea
+                    value={profile.bio}
+                    onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                    placeholder="Conte um pouco sobre você e sua experiência..."
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Instagram
-              </label>
-              <input
-                type="text"
-                value={profile.instagram}
-                onChange={(e) => setProfile({...profile, instagram: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="@seuinstagram"
-              />
-            </div>
+                {/* Grid para endereço e redes sociais */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Endereço Base
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.address}
+                      onChange={(e) => setProfile({...profile, address: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      placeholder="Rua, número, bairro, cidade"
+                    />
+                  </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Anos de Experiência
-              </label>
-              <input
-                type="number"
-                value={profile.experience_years}
-                onChange={(e) => setProfile({...profile, experience_years: parseInt(e.target.value) || 0})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                placeholder="0"
-                min="0"
-              />
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Instagram
+                    </label>
+                    <input
+                      type="text"
+                      value={profile.instagram}
+                      onChange={(e) => setProfile({...profile, instagram: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      placeholder="@seuinstagram"
+                    />
+                  </div>
+                </div>
 
-            <button
-              onClick={saveProfile}
-              disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Salvando...' : '💾 Salvar Perfil'}
-            </button>
+                {/* Anos de experiência - campo menor */}
+                <div className="max-w-xs">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Anos de Experiência
+                  </label>
+                  <input
+                    type="number"
+                    value={profile.experience_years}
+                    onChange={(e) => setProfile({...profile, experience_years: parseInt(e.target.value) || 0})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+
+                {/* Botão de salvar */}
+                <div className="pt-4">
+                  <button
+                    onClick={saveProfile}
+                    disabled={loading}
+                    className="w-full md:w-auto min-w-48 py-3 px-6 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Salvando...' : '💾 Salvar Perfil'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

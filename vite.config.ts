@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/MakeupManager/',
+  base: process.env.NODE_ENV === 'production' ? '/MakeupManager/' : '/',
   server: {
     port: 3000,
     open: true
@@ -11,6 +11,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false
+    sourcemap: false,
+    // Configurações específicas para GitHub Pages
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  // Configurações adicionais para GitHub Pages
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production')
   }
 })

@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { WhatsAppButton, useWhatsAppMessage } from './WhatsAppButton'
+import { WhatsAppAutoSend } from './WhatsAppAutoSend'
+import { QuickWhatsAppSender } from './QuickWhatsAppSender'
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -13,6 +16,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   const [isSignUp, setIsSignUp] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const { generateAppointmentMessage, generateSimpleMessage } = useWhatsAppMessage()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -205,6 +209,75 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             </div>
           </div>
         </div>
+
+        {/* WhatsApp com Campo Customizado */}
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h3 className="font-semibold text-gray-800 mb-3 text-sm">📱 WhatsApp - Enviar para Qualquer Número</h3>
+          <WhatsAppButton
+            phoneNumber="11984806842" // Número padrão
+            message={generateAppointmentMessage({
+              clientName: 'Cliente Exemplo',
+              service: 'Maquiagem Profissional',
+              date: new Date().toLocaleDateString('pt-BR'),
+              time: '14:30',
+              location: 'A combinar',
+              price: 150.00,
+              notes: 'Agendamento via MakeUp Manager'
+            })}
+            allowCustomNumber={true}
+            className="w-full"
+          >
+            📤 Enviar Agendamento
+          </WhatsAppButton>
+        </div>
+
+        {/* Teste WhatsApp - Opção 1 (Rápidos) */}
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h3 className="font-semibold text-gray-800 mb-3 text-sm">📱 WhatsApp - Envios Rápidos</h3>
+          <div className="space-y-2">
+            <WhatsAppButton
+              phoneNumber="11984806842"
+              message={generateSimpleMessage('Olá! Este é um teste do sistema MakeUp Manager 💄')}
+              className="w-full text-sm"
+            >
+              📲 Teste Mensagem Simples
+            </WhatsAppButton>
+            
+            <WhatsAppButton
+              phoneNumber="11984806842"
+              message={generateAppointmentMessage({
+                clientName: 'Maria Silva',
+                service: 'Maquiagem para Casamento',
+                date: '15/10/2024',
+                time: '14:30',
+                location: 'Salão Beleza Total',
+                price: 150.00,
+                notes: 'Trazer extensões próprias'
+              })}
+              className="w-full text-sm"
+            >
+              💄 Teste Agendamento Fixo
+            </WhatsAppButton>
+          </div>
+        </div>
+
+        {/* Formulário Completo de Agendamento */}
+        <QuickWhatsAppSender />
+
+        {/* Teste WhatsApp - Opção 3 (Auto Send) */}
+        <WhatsAppAutoSend
+          phoneNumber="11984806842"
+          message={generateAppointmentMessage({
+            clientName: 'Ana Costa',
+            service: 'Maquiagem Social + Penteado',
+            date: '20/10/2024',
+            time: '16:00',
+            location: 'Domicílio - Rua das Flores, 123',
+            price: 200.00,
+            notes: 'Evento às 19h, maquiagem natural'
+          })}
+          onSent={() => console.log('Mensagem enviada com sucesso!')}
+        />
       </div>
     </div>
   )

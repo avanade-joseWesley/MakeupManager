@@ -146,15 +146,23 @@ export function Settings({ user, onBack }: SettingsProps) {
   const saveProfile = async () => {
     setLoading(true)
     try {
-      const { error } = await supabase
+      console.log('Salvando perfil:', profile)
+      
+      const { data, error } = await supabase
         .from('profiles')
         .upsert(profile)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro detalhado:', error)
+        throw error
+      }
+      
+      console.log('Perfil salvo com sucesso:', data)
       alert('Perfil atualizado com sucesso!')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving profile:', error)
-      alert('Erro ao salvar perfil')
+      alert(`Erro ao salvar perfil: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -382,10 +390,11 @@ export function Settings({ user, onBack }: SettingsProps) {
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
-          <div className="bg-white p-6 rounded-2xl shadow-xl space-y-4">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              👤 Informações Pessoais
-            </h2>
+          <div className="space-y-4">
+            <div className="bg-white p-6 rounded-2xl shadow-xl space-y-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                👤 Informações Pessoais
+              </h2>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -473,6 +482,7 @@ export function Settings({ user, onBack }: SettingsProps) {
             >
               {loading ? 'Salvando...' : '💾 Salvar Perfil'}
             </button>
+            </div>
           </div>
         )}
 

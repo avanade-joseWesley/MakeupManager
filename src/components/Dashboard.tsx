@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { WhatsAppButton } from './WhatsAppButton'
 import { Settings } from './Settings'
+import { PriceCalculator } from './PriceCalculator'
 
 interface DashboardProps {
   user: any
@@ -11,7 +12,7 @@ interface DashboardProps {
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [message, setMessage] = useState('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator'>('dashboard')
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -45,6 +46,30 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
     return <Settings user={user} onBack={() => setCurrentView('dashboard')} />
   }
 
+  if (currentView === 'calculator') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 px-4 py-6">
+        <div className="max-w-md mx-auto space-y-6">
+          <div className="bg-white p-6 rounded-2xl shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => setCurrentView('dashboard')}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                ← Voltar
+              </button>
+              <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">
+                🧮 Calculadora
+              </h1>
+              <div></div>
+            </div>
+          </div>
+          <PriceCalculator user={user} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 px-4 py-6">
       <div className="max-w-md mx-auto space-y-6">
@@ -60,6 +85,12 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
               </p>
             </div>
             <div className="flex space-x-2">
+              <button
+                onClick={() => setCurrentView('calculator')}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-green-600 transition-colors"
+              >
+                🧮 Calc
+              </button>
               <button
                 onClick={() => setCurrentView('settings')}
                 className="px-3 py-2 text-sm text-gray-600 hover:text-pink-600 transition-colors"

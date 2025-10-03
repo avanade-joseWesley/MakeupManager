@@ -744,7 +744,7 @@ export function Settings({ user, onBack }: SettingsProps) {
             {getAllServices().length > 0 && serviceAreas.length > 0 && (
               <div className="bg-white p-6 rounded-2xl shadow-xl">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                  💰 Definir Preço por Região
+                  💰 Preço Regional (Substitui o Preço Padrão)
                 </h2>
                 
                 <div className="space-y-4">
@@ -790,17 +790,20 @@ export function Settings({ user, onBack }: SettingsProps) {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preço Especial (R$)
+                      Preço para esta Região (R$)
                     </label>
                     <input
                       type="number"
                       value={regionalPrice}
                       onChange={(e) => setRegionalPrice(parseFloat(e.target.value) || 0)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                      placeholder="0.00"
+                      placeholder="Ex: 250.00"
                       min="0"
                       step="0.01"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Este preço irá <strong>substituir</strong> o preço padrão do serviço nesta região
+                    </p>
                   </div>
 
                   <button
@@ -808,8 +811,15 @@ export function Settings({ user, onBack }: SettingsProps) {
                     disabled={loading || !selectedService || !selectedArea || regionalPrice <= 0}
                     className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                   >
-                    {loading ? 'Salvando...' : '💰 Definir Preço Regional'}
+                    {loading ? 'Salvando...' : '💰 Definir Preço para Região'}
                   </button>
+                  
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      <strong>💡 Como funciona:</strong> O preço regional <strong>substitui completamente</strong> o preço padrão. 
+                      Se não definir preço regional, será usado o preço padrão do serviço.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

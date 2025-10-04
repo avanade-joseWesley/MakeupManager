@@ -62,19 +62,21 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50 px-4 py-6">
-      <Container className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 mb-2">
-            💄 MakeUp Manager
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600">
-            {isSignUp ? 'Criar sua conta' : 'Entrar na sua conta'}
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50 py-4">
+      <Container className="space-y-4">
+        <div className="text-center mb-6">
+          <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-6 rounded-2xl shadow-xl mb-6">
+            <h2 className="text-2xl font-bold mb-2">
+              💄 MakeUp Manager
+            </h2>
+            <p className="text-pink-100">
+              {isSignUp ? 'Criar sua conta' : 'Entrar na sua conta'}
+            </p>
+          </div>
         </div>
 
-        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-xl">
-          <form className="space-y-5" onSubmit={handleSubmit}>
+        <div className="bg-white p-6 rounded-2xl shadow-xl">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                 📧 Email

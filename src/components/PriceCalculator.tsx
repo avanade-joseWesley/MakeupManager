@@ -45,6 +45,39 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   // Dados do cliente
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
+  const [knownClients, setKnownClients] = useState<Array<{id:string,name:string,phone?:string}>>([])
+  const [clientsLoading, setClientsLoading] = useState(false)
+  const [clientsError, setClientsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      setClientsLoading(true)
+      setClientsError(null)
+      try {
+        let query = supabase.from('clients').select('id,name,phone,address,instagram').order('created_at', { ascending: false })
+        if (user && user.id) query = query.eq('user_id', user.id)
+        const { data, error } = await query
+
+        if (error) throw error
+        if (mounted && data) {
+          setKnownClients(data.map((c: any) => ({ id: c.id, name: c.name, phone: c.phone, address: c.address, instagram: c.instagram })))
+        }
+      } catch (err: any) {
+        console.warn('Erro carregando clients do Supabase', err)
+        setClientsError(err.message || String(err))
+      } finally {
+        setClientsLoading(false)
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
+
+  const handleClientNameChange = (v: string) => {
+    setClientName(v)
+    const match = knownClients.find(c => c.name === v)
+    if (match && match.phone) setClientPhone(match.phone)
+  }
 
   useEffect(() => {
     loadData()
@@ -205,12 +238,18 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               👤 Nome do Cliente *
             </label>
             <input
+              list="clients-list"
               type="text"
               value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
+              onChange={(e) => handleClientNameChange(e.target.value)}
               className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Nome completo do cliente"
             />
+            <datalist id="clients-list">
+              {knownClients.map(c => (
+                <option key={c.id} value={c.name} />
+              ))}
+            </datalist>
           </div>
           <div>
             <label className="block text-sm font-medium text-blue-800 mb-2">

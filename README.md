@@ -110,3 +110,22 @@ Este projeto está sob licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais
 ---
 
 **🚀 Pronto para transformar o mercado de beleza!**
+
+## Banco de Dados (Supabase)
+
+Existem scripts para criar a tabela `clients` e semear dados de exemplo:
+
+- `database/create_clients_table.sql` — migração SQL para criar a tabela `clients`.
+- `scripts/seed_clients.js` — script Node que insere dados de exemplo via Supabase (usa `SUPABASE_URL` e `SUPABASE_KEY`).
+
+Como usar:
+
+1. Rode a SQL no editor Supabase SQL ou com psql:
+
+	psql "<sua_connection_string>" -f database/create_clients_table.sql
+
+2. Para semear via API (servidor/ambiente seguro):
+
+	SUPABASE_URL=<sua_url> SUPABASE_KEY=<service_role_key> node scripts/seed_clients.js
+
+Use uma `service_role` key em ambientes seguros apenas (não coloque em cliente).

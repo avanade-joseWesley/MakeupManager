@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { WhatsAppButton } from './WhatsAppButton'
 import { Settings } from './Settings'
 import { PriceCalculator } from './PriceCalculator'
+import ClientsPage from './ClientsPage'
 
 interface DashboardProps {
   user: any
@@ -12,7 +13,7 @@ interface DashboardProps {
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [message, setMessage] = useState('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients'>('dashboard')
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -70,6 +71,10 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
     )
   }
 
+  if (currentView === 'clients') {
+    return <ClientsPage onBack={() => setCurrentView('dashboard')} user={user} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 px-4 py-6">
       <div className="max-w-md mx-auto space-y-6">
@@ -96,6 +101,12 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
                 className="px-3 py-2 text-sm text-gray-600 hover:text-pink-600 transition-colors"
               >
                 ⚙️ Config
+              </button>
+              <button
+                onClick={() => setCurrentView('clients')}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                👥 Clientes
               </button>
               <button
                 onClick={handleLogout}

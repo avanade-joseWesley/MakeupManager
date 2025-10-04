@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "start": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "node -e \"if(process.env.ALLOW_DEPLOY==='true'){require('child_process').spawnSync('npx',['gh-pages','-d','dist'],{stdio:'inherit'}); } else { console.error('Deployment blocked: set ALLOW_DEPLOY=true to allow deploy'); process.exit(1);}\"",
+    "deploy:force": "gh-pages -d dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",

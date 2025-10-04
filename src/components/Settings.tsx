@@ -360,6 +360,52 @@ export function Settings({ user, onBack }: SettingsProps) {
     }
   }
 
+  const removeService = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este serviço? Essa ação não pode ser desfeita.')) return
+    setLoading(true)
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      loadUserData()
+    } catch (error) {
+      console.error('Error removing service:', error)
+      alert('Erro ao remover serviço')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const removeCategory = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta categoria e todos os serviços dentro dela? Essa ação não pode ser desfeita.')) return
+    setLoading(true)
+    try {
+      // delete services belonging to the category first
+      const { error: err1 } = await supabase
+        .from('services')
+        .delete()
+        .eq('category_id', id)
+
+      if (err1) throw err1
+
+      const { error: err2 } = await supabase
+        .from('service_categories')
+        .delete()
+        .eq('id', id)
+
+      if (err2) throw err2
+      loadUserData()
+    } catch (error) {
+      console.error('Error removing category:', error)
+      alert('Erro ao remover categoria')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Helper functions
   const getServiceName = (serviceId: string) => {
     for (const category of categories) {
@@ -815,6 +861,7 @@ export function Settings({ user, onBack }: SettingsProps) {
                     <div key={category.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="font-semibold text-gray-800 mb-2">
                         📂 {category.name}
+                        <button onClick={() => removeCategory(category.id)} className="ml-3 text-sm text-red-500">Excluir Categoria</button>
                       </div>
                       {category.description && (
                         <div className="text-sm text-gray-600 mb-3">{category.description}</div>
@@ -829,6 +876,9 @@ export function Settings({ user, onBack }: SettingsProps) {
                                 <div className="text-sm text-gray-600">
                                   R$ {service.price.toFixed(2)} • {service.duration_minutes}min
                                 </div>
+                              </div>
+                              <div className="flex flex-col gap-2">
+                                <button onClick={() => removeService(service.id)} className="text-sm text-red-600">Excluir</button>
                               </div>
                             </div>
                           ))}
@@ -993,6 +1043,7 @@ export function Settings({ user, onBack }: SettingsProps) {
             </div>
           </div>
         )}
+        
       </div>
     </div>
   )

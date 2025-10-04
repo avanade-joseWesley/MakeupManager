@@ -13,6 +13,7 @@
     "deploy:force": "gh-pages -d dist"
   },
   "dependencies": {
+    "@esbuild/win32-x64": "^0.25.10",
     "@supabase/supabase-js": "^2.38.0",
     "clsx": "^2.0.0",
     "cors": "^2.8.5",
@@ -29,8 +30,8 @@
     "zustand": "^4.4.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.15",
-    "@types/react-dom": "^18.2.7",
+    "@types/react": "^18.3.25",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.14",
     "gh-pages": "^6.3.0",

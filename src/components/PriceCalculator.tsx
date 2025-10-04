@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import NumericInput from './NumericInput'
 
 interface PriceCalculatorProps {
   user: any
@@ -39,6 +40,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   const [includeTravelFee, setIncludeTravelFee] = useState(false)
   const [includeCancellationFee, setIncludeCancellationFee] = useState(false)
   const [cancellationFeePercent, setCancellationFeePercent] = useState(20)
+  const [cancellationPercentValid, setCancellationPercentValid] = useState<boolean>(true)
   
   // Dados do cliente
   const [clientName, setClientName] = useState('')
@@ -297,7 +299,14 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   type="checkbox"
                   id="includeCancellationFee"
                   checked={includeCancellationFee}
-                  onChange={(e) => setIncludeCancellationFee(e.target.checked)}
+                  onChange={(e) => {
+                    // only allow enabling if percent is valid
+                    if (e.target.checked && !cancellationPercentValid) {
+                      alert('Corrija o percentual antes de ativar a taxa de cancelamento.')
+                      return
+                    }
+                    setIncludeCancellationFee(e.target.checked)
+                  }}
                   className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
                 />
                 <label htmlFor="includeCancellationFee" className="text-sm text-gray-700">
@@ -310,16 +319,24 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   <label htmlFor="cancellationPercent" className="text-sm text-gray-600">
                     Percentual:
                   </label>
-                  <input
-                    type="number"
+                  <NumericInput
                     id="cancellationPercent"
-                    value={cancellationFeePercent}
-                    onChange={(e) => setCancellationFeePercent(Number(e.target.value))}
-                    min="0"
-                    max="100"
+                    value={String(cancellationFeePercent)}
+                    onChange={(v) => {
+                      const n = parseInt(v, 10)
+                      setCancellationFeePercent(Number.isNaN(n) ? 0 : n)
+                    }}
+                    decimalPlaces={null}
+                    allowComma={false}
+                    min={0}
+                    max={100}
                     className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    onValidate={(valid) => setCancellationPercentValid(valid)}
                   />
                   <span className="text-sm text-gray-600">%</span>
+                  {!cancellationPercentValid && (
+                    <p className="text-xs text-red-600 ml-2">Percentual inválido (0-100).</p>
+                  )}
                 </div>
               )}
             </div>

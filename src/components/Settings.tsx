@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import NumericInput from './NumericInput'
 
 interface SettingsProps {
   user: any
@@ -88,9 +89,29 @@ export function Settings({ user, onBack }: SettingsProps) {
   const [selectedArea, setSelectedArea] = useState('')
   const [regionalPrice, setRegionalPrice] = useState(0)
 
+  // Editable string inputs for numeric fields — keep them as strings while editing so
+  // the user can delete characters (empty string) without the component forcing 0.
+  const [experienceYearsInput, setExperienceYearsInput] = useState<string>('')
+  const [newAreaTravelFeeInput, setNewAreaTravelFeeInput] = useState<string>('')
+  const [newServicePriceInput, setNewServicePriceInput] = useState<string>('')
+  const [newServiceDurationInput, setNewServiceDurationInput] = useState<string>('60')
+  const [regionalPriceInput, setRegionalPriceInput] = useState<string>('')
+
+  // Validation states
+  const [experienceYearsValid, setExperienceYearsValid] = useState<boolean>(true)
+  const [newAreaTravelFeeValid, setNewAreaTravelFeeValid] = useState<boolean>(true)
+  const [newServicePriceValid, setNewServicePriceValid] = useState<boolean>(true)
+  const [newServiceDurationValid, setNewServiceDurationValid] = useState<boolean>(true)
+  const [regionalPriceValid, setRegionalPriceValid] = useState<boolean>(true)
+
   useEffect(() => {
     loadUserData()
   }, [])
+
+  // initialize derived string inputs when profile/service areas are loaded
+  useEffect(() => {
+    setExperienceYearsInput(profile.experience_years?.toString() || '0')
+  }, [profile.experience_years])
 
   const loadUserData = async () => {
     setLoading(true)
@@ -114,6 +135,8 @@ export function Settings({ user, onBack }: SettingsProps) {
 
       if (areasData) {
         setServiceAreas(areasData)
+        // reset add-area input
+        setNewAreaTravelFeeInput('')
       }
 
       // Load categories and services
@@ -127,6 +150,9 @@ export function Settings({ user, onBack }: SettingsProps) {
 
       if (categoriesData) {
         setCategories(categoriesData)
+        // reset add-service inputs
+        setNewServicePriceInput('')
+        setNewServiceDurationInput('60')
       }
 
       // Load regional prices
@@ -146,13 +172,21 @@ export function Settings({ user, onBack }: SettingsProps) {
   }
 
   const saveProfile = async () => {
+    // prevent saving if invalid
+    if (!experienceYearsValid) {
+      alert('Corrija os valores inválidos antes de salvar o perfil.')
+      return
+    }
     setLoading(true)
     try {
-      console.log('Salvando perfil:', profile)
+      // convert experience years from editable string to number
+      const experience_years = parseInt(experienceYearsInput, 10) || 0
+      const profileToSave = { ...profile, experience_years }
+      console.log('Salvando perfil:', profileToSave)
       
       const { data, error } = await supabase
         .from('profiles')
-        .upsert(profile)
+        .upsert(profileToSave)
         .select()
 
       if (error) {
@@ -172,16 +206,23 @@ export function Settings({ user, onBack }: SettingsProps) {
 
   const addServiceArea = async () => {
     if (!newArea.name) return
+    if (!newAreaTravelFeeValid) {
+      alert('Corrija a taxa de deslocamento antes de adicionar a região.')
+      return
+    }
 
     setLoading(true)
     try {
+      // convert travel fee input to number
+      const travel_fee = parseFloat(newAreaTravelFeeInput) || 0
       const { error } = await supabase
         .from('service_areas')
-        .insert([{ ...newArea, user_id: user.id }])
+        .insert([{ ...newArea, travel_fee, user_id: user.id }])
 
       if (error) throw error
       
       setNewArea({ name: '', description: '', travel_fee: 0 })
+  setNewAreaTravelFeeInput('')
       loadUserData()
     } catch (error) {
       console.error('Error adding service area:', error)
@@ -232,12 +273,19 @@ export function Settings({ user, onBack }: SettingsProps) {
 
   const addService = async () => {
     if (!newService.name || !newService.category_id) return
+    if (!newServicePriceValid || !newServiceDurationValid) {
+      alert('Corrija o preço ou duração inválidos antes de adicionar o serviço.')
+      return
+    }
 
     setLoading(true)
     try {
+      // convert price and duration inputs
+      const price = parseFloat(newServicePriceInput) || 0
+      const duration_minutes = parseInt(newServiceDurationInput, 10) || 60
       const { error } = await supabase
         .from('services')
-        .insert([{ ...newService, user_id: user.id }])
+        .insert([{ ...newService, price, duration_minutes, user_id: user.id }])
 
       if (error) throw error
       
@@ -248,6 +296,8 @@ export function Settings({ user, onBack }: SettingsProps) {
         duration_minutes: 60,
         category_id: ''
       })
+      setNewServicePriceInput('')
+      setNewServiceDurationInput('60')
       loadUserData()
     } catch (error) {
       console.error('Error adding service:', error)
@@ -258,7 +308,13 @@ export function Settings({ user, onBack }: SettingsProps) {
   }
 
   const addRegionalPrice = async () => {
-    if (!selectedService || !selectedArea || regionalPrice <= 0) return
+    // require selection and valid input
+    const price = parseFloat(regionalPriceInput)
+    if (!selectedService || !selectedArea || !price || price <= 0) return
+    if (!regionalPriceValid) {
+      alert('Corrija o preço regional inválido antes de salvar.')
+      return
+    }
 
     setLoading(true)
     try {
@@ -268,14 +324,15 @@ export function Settings({ user, onBack }: SettingsProps) {
           user_id: user.id,
           service_id: selectedService,
           service_area_id: selectedArea,
-          price: regionalPrice
+          price
         }])
 
       if (error) throw error
       
-      setSelectedService('')
-      setSelectedArea('')
-      setRegionalPrice(0)
+  setSelectedService('')
+  setSelectedArea('')
+  setRegionalPrice(0)
+  setRegionalPriceInput('')
       loadUserData()
     } catch (error) {
       console.error('Error adding regional price:', error)
@@ -490,14 +547,19 @@ export function Settings({ user, onBack }: SettingsProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Anos de Experiência
                   </label>
-                  <input
-                    type="number"
-                    value={profile.experience_years}
-                    onChange={(e) => setProfile({...profile, experience_years: parseInt(e.target.value) || 0})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  <NumericInput
+                    value={experienceYearsInput}
+                    onChange={setExperienceYearsInput}
                     placeholder="0"
-                    min="0"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    decimalPlaces={null}
+                    allowComma={false}
+                    min={0}
+                    onValidate={(valid) => setExperienceYearsValid(valid)}
                   />
+                  {!experienceYearsValid && (
+                    <p className="text-xs text-red-600 mt-1">Digite um número válido para anos de experiência.</p>
+                  )}
                 </div>
 
                 {/* Botão de salvar */}
@@ -545,15 +607,22 @@ export function Settings({ user, onBack }: SettingsProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Taxa de Deslocamento (R$)
                   </label>
-                  <input
-                    type="number"
-                    value={newArea.travel_fee}
-                    onChange={(e) => setNewArea({...newArea, travel_fee: parseFloat(e.target.value) || 0})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  <NumericInput
+                    value={newAreaTravelFeeInput}
+                    onChange={setNewAreaTravelFeeInput}
                     placeholder="0.00"
-                    min="0"
-                    step="0.01"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    decimalPlaces={2}
+                    allowComma={true}
+                    min={0}
+                    formatCurrency={true}
+                    currency={'BRL'}
+                    locale={'pt-BR'}
+                    onValidate={(valid) => setNewAreaTravelFeeValid(valid)}
                   />
+                  {!newAreaTravelFeeValid && (
+                    <p className="text-xs text-red-600 mt-1">Digite um valor válido para a taxa de deslocamento.</p>
+                  )}
                 </div>
 
                 <button
@@ -681,30 +750,41 @@ export function Settings({ user, onBack }: SettingsProps) {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Preço (R$)
                       </label>
-                      <input
-                        type="number"
-                        value={newService.price}
-                        onChange={(e) => setNewService({...newService, price: parseFloat(e.target.value) || 0})}
+                      <NumericInput
+                        value={newServicePriceInput}
+                        onChange={setNewServicePriceInput}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         placeholder="0.00"
-                        min="0"
-                        step="0.01"
+                        decimalPlaces={2}
+                        allowComma={true}
+                        min={0}
+                        formatCurrency={true}
+                        currency={'BRL'}
+                        locale={'pt-BR'}
+                        onValidate={(valid) => setNewServicePriceValid(valid)}
                       />
+                      {!newServicePriceValid && (
+                        <p className="text-xs text-red-600 mt-1">Preço inválido.</p>
+                      )}
                     </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Duração (min)
                       </label>
-                      <input
-                        type="number"
-                        value={newService.duration_minutes}
-                        onChange={(e) => setNewService({...newService, duration_minutes: parseInt(e.target.value) || 60})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        placeholder="60"
-                        min="15"
-                        step="15"
-                      />
+                        <NumericInput
+                          value={newServiceDurationInput}
+                          onChange={setNewServiceDurationInput}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                          placeholder="60"
+                          decimalPlaces={null}
+                          allowComma={false}
+                          min={15}
+                          onValidate={(valid) => setNewServiceDurationValid(valid)}
+                        />
+                        {!newServiceDurationValid && (
+                          <p className="text-xs text-red-600 mt-1">Duração inválida (mínimo 15 minutos).</p>
+                        )}
                     </div>
                   </div>
 
@@ -821,15 +901,22 @@ export function Settings({ user, onBack }: SettingsProps) {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Preço para esta Região (R$)
                     </label>
-                    <input
-                      type="number"
-                      value={regionalPrice}
-                      onChange={(e) => setRegionalPrice(parseFloat(e.target.value) || 0)}
+                    <NumericInput
+                      value={regionalPriceInput}
+                      onChange={setRegionalPriceInput}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                       placeholder="Ex: 250.00"
-                      min="0"
-                      step="0.01"
+                      decimalPlaces={2}
+                      allowComma={true}
+                      min={0}
+                      formatCurrency={true}
+                      currency={'BRL'}
+                      locale={'pt-BR'}
+                      onValidate={(valid) => setRegionalPriceValid(valid)}
                     />
+                    {!regionalPriceValid && (
+                      <p className="text-xs text-red-600 mt-1">Preço regional inválido.</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
                       Este preço irá <strong>substituir</strong> o preço padrão do serviço nesta região
                     </p>
@@ -837,7 +924,13 @@ export function Settings({ user, onBack }: SettingsProps) {
 
                   <button
                     onClick={addRegionalPrice}
-                    disabled={loading || !selectedService || !selectedArea || regionalPrice <= 0}
+                    disabled={
+                      loading ||
+                      !selectedService ||
+                      !selectedArea ||
+                      !regionalPriceValid ||
+                      (parseFloat((regionalPriceInput || '').toString().replace(',', '.')) || 0) <= 0
+                    }
                     className="w-full py-3 px-4 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                   >
                     {loading ? 'Salvando...' : '💰 Definir Preço para Região'}

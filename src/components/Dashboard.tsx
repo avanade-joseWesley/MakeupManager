@@ -129,7 +129,7 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
         </div>
 
         {/* WhatsApp - Envio Rápido */}
-        <div className="bg-white p-6 rounded-2xl shadow-xl">
+        {/* <div className="bg-white p-6 rounded-2xl shadow-xl">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">
             📱 Enviar WhatsApp
           </h2>
@@ -188,7 +188,7 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Próximos Agendamentos */}
         <div className="bg-white p-6 rounded-2xl shadow-xl">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import NumericInput from './NumericInput'
+import { Container } from './Container'
 
 interface SettingsProps {
   user: any
@@ -432,7 +433,7 @@ export function Settings({ user, onBack }: SettingsProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 px-4 py-6">
-      <div className="max-w-md mx-auto space-y-6">
+      <Container className="space-y-6">
         {/* Header */}
         <div className="bg-white p-6 rounded-2xl shadow-xl">
           <div className="flex items-center justify-between mb-4">
@@ -1044,7 +1045,7 @@ export function Settings({ user, onBack }: SettingsProps) {
           </div>
         )}
         
-      </div>
+      </Container>
     </div>
   )
 }

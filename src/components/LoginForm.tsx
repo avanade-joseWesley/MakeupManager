@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Container } from './Container'
 
 interface LoginFormProps {
   onSuccess?: () => void
@@ -62,7 +63,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50 px-4 py-6">
-      <div className="max-w-sm w-full space-y-6">
+      <Container className="space-y-6">
         <div className="text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 mb-2">
             💄 MakeUp Manager
@@ -188,7 +189,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </div>
 
 
-      </div>
+      </Container>
     </div>
   )
 }

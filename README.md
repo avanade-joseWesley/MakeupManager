@@ -1,131 +1,214 @@
-# MakeUp Manager
+# MakeUp Manager 💄
 
 Sistema completo de gestão para maquiladoras profissionais.
 
-## 🚀 Status do Projeto
+## 🌐 Demo Online
 
-- ✅ **Protótipo:** 100% funcional (18 módulos)
-- ✅ **Documentação:** Completa e detalhada  
-- ✅ **Arquitetura:** Definida (Next.js + Supabase)
-- ✅ **Roadmap:** 15 semanas estruturadas
+**Acesse:** https://avanade-josewesley.github.io/MakeupManager/
+
+## 🚀 Funcionalidades Atuais
+
+- ✅ Gestão de Clientes (CRUD completo)
+- ✅ Calculadora de Preços
+- ✅ Gestão de Serviços e Categorias
+- ✅ Preços Regionais
+- ✅ Integração com Supabase
+- ✅ Autenticação de Usuários
+- ✅ Row Level Security (RLS)
+- ✅ PWA Ready
 
 ## 🏗️ Setup Local
 
 ### Pré-requisitos
-- Node.js 18+
-- npm ou yarn
+- Node.js 14+ (recomendado 18+)
+- npm
 - Git
+- Conta no Supabase (grátis)
 
-### Instalação
+### Instalação Rápida
+
 ```bash
-# Clone o repositório
-git clone https://github.com/Avanade-JoseWesley/MakeupManager.git
+# 1. Clone o repositório
+git clone https://github.com/avanade-joseWesley/MakeupManager.git
 cd MakeupManager
 
-# Instale as dependências
+# 2. Instale as dependências
 npm install
 
-# Execute em desenvolvimento
+# 3. Configure as variáveis de ambiente
+# Crie um arquivo .env na raiz do projeto
+# Copie o conteúdo de .env.example e preencha com suas credenciais do Supabase
+
+# 4. Execute em desenvolvimento
 npm run dev
+
+# Acesse: http://127.0.0.1:3000/
 ```
 
-### Scripts Disponíveis
-- `npm run dev` - Inicia servidor de desenvolvimento
-- `npm run build` - Build para produção
-- `npm run start` - Inicia servidor de produção
-- `npm run lint` - Executa linter
+### Configuração do Supabase
+
+1. Crie uma conta em https://supabase.com
+2. Crie um novo projeto
+3. Vá em Settings → API
+4. Copie a URL do projeto e a chave pública (anon key)
+5. Cole no arquivo `.env`:
+
+```env
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-aqui
+```
+
+6. Execute os scripts SQL na pasta `database/`:
+   - `create_clients_table.sql` — cria tabela de clientes
+   - `clients_rls.sql` — habilita segurança RLS
+
+## 📝 Scripts Disponíveis
+
+```bash
+npm run dev      # Servidor de desenvolvimento (http://127.0.0.1:3000/)
+npm run build    # Build para produção (gera pasta dist/)
+npm start        # Preview do build (http://127.0.0.1:4173/MakeupManager/)
+```
+
+### Deploy Manual
+
+```powershell
+.\deploy.ps1     # Publica no GitHub Pages
+```
 
 ## 📁 Estrutura do Projeto
 
 ```
 MakeupManager/
-├── app/                 # Next.js App Router
-│   ├── globals.css     # Estilos globais
-│   ├── layout.tsx      # Layout principal
-│   └── page.tsx        # Página inicial
-├── components/         # Componentes React
-├── lib/               # Utilitários e configurações
-├── public/            # Arquivos estáticos
-├── docs/              # Documentação
-└── package.json       # Dependências do projeto
+├── src/
+│   ├── components/         # Componentes React
+│   │   ├── Clients.tsx     # Gestão de clientes
+│   │   ├── Dashboard.tsx   # Dashboard principal
+│   │   ├── LoginForm.tsx   # Login/Autenticação
+│   │   ├── PriceCalculator.tsx  # Calculadora
+│   │   └── Settings.tsx    # Configurações
+│   ├── lib/
+│   │   └── supabase.ts     # Cliente Supabase
+│   ├── App.tsx             # App principal
+│   └── main.tsx            # Entry point
+├── database/               # Scripts SQL
+│   ├── create_clients_table.sql
+│   └── clients_rls.sql
+├── public/                 # Assets estáticos
+├── .env                    # Variáveis de ambiente (local)
+├── deploy.ps1              # Script de deploy
+└── vite.config.ts          # Configuração Vite
 ```
 
-## 🎯 Roadmap de Desenvolvimento
+## 🔄 Fluxo de Deploy
 
-### Fase 1: Fundação (5 semanas)
-- Setup e Autenticação
-- Gestão de Serviços
-- Calculadora e Orçamentos
-- Gestão de Clientes
-- Testes e Refinamentos
+### Desenvolvimento → Produção
 
-### Fase 2: Operações (6 semanas)
-- Agenda Completa
-- Sistema Financeiro
-- Avaliações e Feedback
-- Integrações (WhatsApp, Pagamentos)
+```
+developer (branch de desenvolvimento)
+    ↓ trabalho diário
+    ↓ commits frequentes
+    ↓
+    ↓ quando estiver pronto
+    ↓
+master (branch de produção)
+    ↓ merge + push
+    ↓
+GitHub Actions (CI/CD)
+    ↓ build automático
+    ↓
+GitHub Pages (produção)
+https://avanade-josewesley.github.io/MakeupManager/
+```
 
-### Fase 3: Otimização (4 semanas)
-- PWA e Performance
-- Analytics e BI
-- Automações
-- Multi-tenant
+### Opção 1: Deploy Manual (Recomendado)
+```powershell
+# Teste localmente
+npm run build
+
+# Publique quando estiver pronto
+.\deploy.ps1
+```
+
+### Opção 2: Deploy via GitHub Actions
+```bash
+# 1. Merge developer → master
+git checkout master
+git merge developer
+git push origin master
+
+# 2. GitHub Actions faz deploy automático
+# 3. Aguarde 1-2 minutos
+```
 
 ## 🛠️ Stack Tecnológico
 
-- **Frontend:** Next.js 14, React, TypeScript
+- **Frontend:** React 18 + TypeScript
+- **Build Tool:** Vite 4
 - **Styling:** Tailwind CSS
 - **Database:** Supabase (PostgreSQL)
 - **Auth:** Supabase Auth
-- **Deploy:** Vercel
-- **Integrações:** WhatsApp Business API, Stripe
+- **Deploy:** GitHub Pages
+- **CI/CD:** GitHub Actions
 
-## 📚 Documentação
+## 📚 Documentação Adicional
 
-- [Documentação Técnica Completa](docs/DOCUMENTACAO_TECNICA_COMPLETA.md)
-- [Arquitetura do Sistema](docs/ARQUITETURA_SISTEMA.md)
-- [Plano de Entregas](docs/PLANO_ENTREGAS_ROADMAP.md)
-- [Resumo Executivo](docs/RESUMO_EXECUTIVO_FINAL.md)
+- 📖 [Guia Completo de Deploy](DEPLOY_GUIDE.md) - Tutorial detalhado
+- ⚡ [Comandos Rápidos](COMANDOS.md) - Referência rápida
+- 🔐 [Segurança RLS](database/clients_rls.sql) - Políticas de acesso
+
+## 🔐 Segurança
+
+- ✅ Row Level Security (RLS) habilitado
+- ✅ Usuários só acessam seus próprios dados
+- ✅ Autenticação via Supabase Auth
+- ⚠️ Nunca commite o arquivo `.env` (já está no .gitignore)
 
 ## 🤝 Contribuição
 
-Este é um projeto em desenvolvimento inicial. Para contribuir:
+### Fluxo de Trabalho
 
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
+1. Trabalhe sempre na branch `developer`
+2. Faça commits pequenos e descritivos
+3. Teste localmente antes de fazer merge
+4. Só faça merge para `master` quando estiver pronto para produção
 
-## 📝 Licença
+```bash
+# Exemplo de commit
+git add .
+git commit -m "feat: adiciona filtro de busca de clientes"
+git push origin developer
+```
 
-Este projeto está sob licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+## � Pipeline CI/CD
+
+A pipeline do GitHub Actions roda automaticamente:
+
+- **Em Pull Requests para master:** Apenas valida o build
+- **Em Push para master:** Valida build + faz deploy automático
+
+Ver status: https://github.com/avanade-josewesley/MakeupManager/actions
+
+## � Troubleshooting
+
+### Tela branca no navegador
+- Verifique se o `.env` existe e está preenchido
+- Reinicie o servidor: `npm run dev`
+
+### Erro ao buildar
+- Delete `node_modules`: `Remove-Item node_modules -Recurse -Force`
+- Reinstale: `npm install`
+
+### Deploy falhou
+- Veja logs em: https://github.com/avanade-josewesley/MakeupManager/actions
+- Use deploy manual: `.\deploy.ps1`
 
 ## 📞 Contato
 
 - **Desenvolvedor:** Jose Wesley
-- **GitHub:** [@Avanade-JoseWesley](https://github.com/Avanade-JoseWesley)
-- **Projeto:** MakeUp Manager v0.1.0
+- **GitHub:** [@avanade-joseWesley](https://github.com/avanade-joseWesley)
+- **Projeto:** MakeUp Manager
 
 ---
 
-**🚀 Pronto para transformar o mercado de beleza!**
-
-## Banco de Dados (Supabase)
-
-Existem scripts para criar a tabela `clients` e semear dados de exemplo:
-
-- `database/create_clients_table.sql` — migração SQL para criar a tabela `clients`.
-- `scripts/seed_clients.js` — script Node que insere dados de exemplo via Supabase (usa `SUPABASE_URL` e `SUPABASE_KEY`).
-
-Como usar:
-
-1. Rode a SQL no editor Supabase SQL ou com psql:
-
-	psql "<sua_connection_string>" -f database/create_clients_table.sql
-
-2. Para semear via API (servidor/ambiente seguro):
-
-	SUPABASE_URL=<sua_url> SUPABASE_KEY=<service_role_key> node scripts/seed_clients.js
-
-Use uma `service_role` key em ambientes seguros apenas (não coloque em cliente).
+**💄 Transformando a gestão de maquiladoras profissionais!**

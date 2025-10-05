@@ -254,7 +254,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       
       <div className="space-y-4">
         {/* Dados do Cliente */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+        <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
           <div>
             <label className="block text-sm font-medium text-blue-800 mb-2">
               👤 Nome do Cliente *
@@ -425,20 +425,22 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               {/* Botões de Ação */}
               {clientName && clientPhone && (
                 <div className="mt-4 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
                     <button
                       onClick={sendWhatsAppBudget}
-                      className="py-3 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                      className="w-full py-2 px-3 sm:py-3 sm:px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
                     >
                       <span>📱</span>
-                      <span>Enviar Orçamento</span>
+                      <span className="hidden sm:inline">Enviar Orçamento</span>
+                      <span className="sm:hidden">Orçamento</span>
                     </button>
                     <button
                       onClick={() => setShowAppointmentModal(true)}
-                      className="py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                      className="w-full py-2 px-3 sm:py-3 sm:px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
                     >
                       <span>📅</span>
-                      <span>Agendar Serviço</span>
+                      <span className="hidden sm:inline">Agendar Serviço</span>
+                      <span className="sm:hidden">Agendar</span>
                     </button>
                   </div>
                 </div>

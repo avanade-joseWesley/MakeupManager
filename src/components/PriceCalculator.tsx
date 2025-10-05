@@ -531,63 +531,100 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                             const displayPrice = regionalPrice ? regionalPrice.price : service.price
 
                             return (
-                              <div key={service.id} className="flex items-center space-x-1 p-1 rounded hover:bg-gray-50">
-                                <input
-                                  type="checkbox"
-                                  id={`service-${service.id}`}
-                                  checked={isSelected}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      // Adicionar serviço
-                                      const unitPrice = regionalPrice ? regionalPrice.price : service.price
-                                      setAppointmentServices(prev => [...prev, {
-                                        serviceId: service.id,
-                                        quantity: 1,
-                                        unitPrice,
-                                        totalPrice: unitPrice
-                                      }])
-                                    } else {
-                                      // Remover serviço
-                                      setAppointmentServices(prev => prev.filter(s => s.serviceId !== service.id))
-                                    }
-                                  }}
-                                  className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded flex-shrink-0"
-                                />
+                              <div key={service.id} className="p-1 rounded hover:bg-gray-50">
+                                <div className="flex items-center space-x-1">
+                                  <input
+                                    type="checkbox"
+                                    id={`service-${service.id}`}
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        // Adicionar serviço
+                                        const unitPrice = regionalPrice ? regionalPrice.price : service.price
+                                        setAppointmentServices(prev => [...prev, {
+                                          serviceId: service.id,
+                                          quantity: 1,
+                                          unitPrice,
+                                          totalPrice: unitPrice
+                                        }])
+                                      } else {
+                                        // Remover serviço
+                                        setAppointmentServices(prev => prev.filter(s => s.serviceId !== service.id))
+                                      }
+                                    }}
+                                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded flex-shrink-0"
+                                  />
 
-                                <div className="flex-1 min-w-0 flex items-center justify-between">
-                                  <label
-                                    htmlFor={`service-${service.id}`}
-                                    className="text-xs font-medium text-gray-800 cursor-pointer min-w-0 leading-tight"
-                                  >
-                                    {service.name}
-                                  </label>
-                                  <div className="text-xs font-medium text-gray-800 flex items-center space-x-1 flex-shrink-0 ml-1 mr-2">
-                                    <span>R$ {displayPrice.toFixed(2)}</span>
-                                    {regionalPrice && (
-                                      <span className="text-blue-600 font-medium text-xs">⭐</span>
-                                    )}
+                                  <div className="flex-1 min-w-0 flex items-center justify-between">
+                                    <label
+                                      htmlFor={`service-${service.id}`}
+                                      className="text-xs font-medium text-gray-800 cursor-pointer min-w-0 leading-tight"
+                                    >
+                                      {service.name}
+                                    </label>
+                                    <div className="text-xs font-medium text-gray-800 flex items-center space-x-1 flex-shrink-0 ml-1 mr-2">
+                                      <span>R$ {displayPrice.toFixed(2)}</span>
+                                      {regionalPrice && (
+                                        <span className="text-blue-600 font-medium text-xs">⭐</span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
-                                <div className="flex items-center flex-shrink-0 w-8 justify-end">
-                                  {isSelected && (
-                                    <input
-                                      type="number"
-                                      min="1"
-                                      value={selectedService?.quantity || 1}
-                                      onChange={(e) => {
-                                        const newQuantity = parseInt(e.target.value) || 1
-                                        const unitPrice = regionalPrice ? regionalPrice.price : service.price
-                                        setAppointmentServices(prev => prev.map(s =>
-                                          s.serviceId === service.id
-                                            ? { ...s, quantity: newQuantity, totalPrice: unitPrice * newQuantity }
-                                            : s
-                                        ))
-                                      }}
-                                      className="w-8 px-1 py-0.5 text-center border border-gray-300 rounded text-xs focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                                    />
-                                  )}
-                                </div>
+                                {isSelected && (
+                                  <div className="flex items-center justify-end mt-2 ml-5">
+                                    <div className="flex items-center space-x-1">
+                                      <span className="text-xs text-gray-600 mr-2">Quantidade:</span>
+                                      <button
+                                        onClick={() => {
+                                          const currentQuantity = selectedService?.quantity || 1
+                                          if (currentQuantity > 1) {
+                                            const newQuantity = currentQuantity - 1
+                                            const unitPrice = regionalPrice ? regionalPrice.price : service.price
+                                            setAppointmentServices(prev => prev.map(s =>
+                                              s.serviceId === service.id
+                                                ? { ...s, quantity: newQuantity, totalPrice: unitPrice * newQuantity }
+                                                : s
+                                            ))
+                                          }
+                                        }}
+                                        className="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-bold text-sm touch-manipulation"
+                                      >
+                                        −
+                                      </button>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={selectedService?.quantity || 1}
+                                        onChange={(e) => {
+                                          const newQuantity = parseInt(e.target.value) || 1
+                                          const unitPrice = regionalPrice ? regionalPrice.price : service.price
+                                          setAppointmentServices(prev => prev.map(s =>
+                                            s.serviceId === service.id
+                                              ? { ...s, quantity: newQuantity, totalPrice: unitPrice * newQuantity }
+                                              : s
+                                          ))
+                                        }}
+                                        className="w-12 h-8 px-2 py-1 text-center border border-gray-300 rounded text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                                      />
+                                      <button
+                                        onClick={() => {
+                                          const currentQuantity = selectedService?.quantity || 1
+                                          const newQuantity = currentQuantity + 1
+                                          const unitPrice = regionalPrice ? regionalPrice.price : service.price
+                                          setAppointmentServices(prev => prev.map(s =>
+                                            s.serviceId === service.id
+                                              ? { ...s, quantity: newQuantity, totalPrice: unitPrice * newQuantity }
+                                              : s
+                                          ))
+                                        }}
+                                        className="w-8 h-8 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-bold text-sm touch-manipulation"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )
                           })}

@@ -177,101 +177,220 @@ export default function Clients({ user }: { user?: any }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white p-6 rounded-2xl shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">📋 Lista de Clientes</h2>
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-500">{filtered.length} resultados</div>
-            <button onClick={() => setShowForm(s => !s)} className="py-1 px-3 text-sm bg-pink-50 text-pink-600 rounded">{showForm ? 'Fechar' : '➕ Adicionar'}</button>
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold flex items-center">📋 Lista de Clientes</h2>
+            <button 
+              onClick={() => setShowForm(s => !s)} 
+              className="px-3 py-1 bg-white/20 text-white rounded-lg text-sm hover:bg-white/30 transition-colors"
+            >
+              {showForm ? 'Fechar' : '➕ Adicionar'}
+            </button>
           </div>
+          <div className="text-blue-100 text-sm mt-1">{filtered.length} clientes cadastrados</div>
         </div>
+        
+        <div className="p-4">
 
-        {/* animated form container (moved into the list card) */}
-        <div className={`overflow-hidden transition-all duration-300 ${showForm ? 'max-h-[800px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
-          <div className="space-y-3 py-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input ref={nameRef} aria-label="Nome" type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Nome*" value={name} onChange={e => setName(e.target.value)} />
-              <input aria-label="Telefone" type="tel" className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Telefone*" value={phone} onChange={e => setPhone(e.target.value)} />
-            </div>
+          {/* Formulário */}
+          <div className={`overflow-hidden transition-all duration-300 ${showForm ? 'max-h-[800px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg space-y-3 mb-4">
+              <div className="text-center mb-3">
+                <h3 className="font-semibold text-gray-800">{editing ? '✏️ Editar Cliente' : '➕ Novo Cliente'}</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <input 
+                  ref={nameRef} 
+                  aria-label="Nome" 
+                  type="text" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
+                  placeholder="Nome completo*" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                />
+                <input 
+                  aria-label="Telefone" 
+                  type="tel" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
+                  placeholder="Telefone*" 
+                  value={phone} 
+                  onChange={e => setPhone(e.target.value)} 
+                />
+                <input 
+                  aria-label="Email" 
+                  type="email" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
+                  placeholder="Email (opcional)" 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                />
+                <input 
+                  aria-label="Endereço" 
+                  type="text" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
+                  placeholder="Endereço (opcional)" 
+                  value={address} 
+                  onChange={e => setAddress(e.target.value)} 
+                />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input aria-label="Email" type="email" className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Email (opcional)" value={email} onChange={e => setEmail(e.target.value)} />
-              <input aria-label="Endereço" type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Endereço (opcional)" value={address} onChange={e => setAddress(e.target.value)} />
-            </div>
+                <input 
+                  aria-label="Instagram" 
+                  type="text" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
+                  placeholder="Instagram (opcional)" 
+                  value={instagram} 
+                  onChange={e => setInstagram(e.target.value)} 
+                />
+                <textarea 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
+                  placeholder="Notas adicionais (opcional)" 
+                  rows={3}
+                  value={notes} 
+                  onChange={e => setNotes(e.target.value)} 
+                />
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input aria-label="Instagram" type="text" className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Instagram (opcional)" value={instagram} onChange={e => setInstagram(e.target.value)} />
-              <div />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input aria-label="Email" type="email" className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Email (opcional)" value={email} onChange={e => setEmail(e.target.value)} />
-              {/* search moved outside form - keep placeholder here only */}
-              <div />
-            </div>
-
-            <textarea className="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Notas (opcional)" value={notes} onChange={e => setNotes(e.target.value)} />
-
-            <div className="flex gap-2">
-              <button onClick={save} disabled={!name.trim() || !phone.trim()} className="py-2 px-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg disabled:opacity-50">{editing ? 'Salvar' : 'Adicionar Cliente'}</button>
-              <button onClick={resetForm} className="py-2 px-4 border rounded-lg">Limpar</button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={save} 
+                  disabled={!name.trim() || !phone.trim()} 
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg disabled:opacity-50 font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors"
+                >
+                  {editing ? '💾 Salvar' : '➕ Adicionar'}
+                </button>
+                <button 
+                  onClick={() => { resetForm(); setShowForm(false); }} 
+                  className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mb-4">
-          <input aria-label="Buscar" type="text" className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50" placeholder="Buscar por nome, telefone ou email" value={query} onChange={e => setQuery(e.target.value)} />
-        </div>
+          {/* Busca */}
+          <div className="mb-4">
+            <div className="relative">
+              <input 
+                aria-label="Buscar" 
+                type="text" 
+                className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg bg-gray-50 focus:border-blue-500 focus:outline-none transition-colors" 
+                placeholder="🔍 Buscar clientes..." 
+                value={query} 
+                onChange={e => setQuery(e.target.value)} 
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                🔍
+              </div>
+            </div>
+          </div>
 
-        {loading ? (
-          <p className="text-gray-500">Carregando clientes...</p>
-        ) : error ? (
-          <p className="text-red-600">Erro: {error}</p>
-        ) : filtered.length === 0 ? (
-          <p className="text-gray-500">Nenhum cliente encontrado.</p>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map(c => (
-              <div key={c.id} className="p-3 bg-white/60 backdrop-blur-sm border border-gray-100 rounded-lg shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center text-pink-600 font-semibold text-lg">{(c.name || ' ')[0].toUpperCase()}</div>
-                    <div className="min-w-0">
-                      <div className="font-medium text-gray-800 truncate">{c.name}</div>
-                      <div className="flex items-center gap-3 text-sm text-gray-600 truncate">
-                        <a className="whitespace-nowrap text-gray-600 hover:underline" href={`https://wa.me/55${String(c.phone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{formatPhone(c.phone)}</a>
-                        {c.instagram && (
-                          <a className="text-pink-600 truncate hover:underline" target="_blank" rel="noreferrer" href={`https://instagram.com/${String(c.instagram).replace(/^@/, '')}`}>@{String(c.instagram).replace(/^@/, '')}</a>
+          {/* Lista de Clientes */}
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="text-gray-500 mt-2">Carregando clientes...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-600">❌ Erro: {error}</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2">👥</div>
+              <p className="text-gray-500">Nenhum cliente encontrado.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filtered.map(c => (
+                <div key={c.id} className="bg-gradient-to-r from-white to-blue-50 border border-blue-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                          {(c.name || ' ')[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-gray-800 truncate">{c.name}</div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <a 
+                              className="text-green-600 hover:text-green-700 font-medium" 
+                              href={`https://wa.me/55${String(c.phone).replace(/\D/g, '')}`} 
+                              target="_blank" 
+                              rel="noreferrer"
+                            >
+                              📱 {formatPhone(c.phone)}
+                            </a>
+                          </div>
+                          {c.instagram && (
+                            <a 
+                              className="text-pink-600 text-sm hover:text-pink-700 font-medium" 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              href={`https://instagram.com/${String(c.instagram).replace(/^@/, '')}`}
+                            >
+                              📷 @{String(c.instagram).replace(/^@/, '')}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => toggleExpanded(c.id)} 
+                        className={`p-2 rounded-full hover:bg-blue-100 transition-all duration-200 ${expandedMap[c.id] ? 'rotate-180 bg-blue-100' : 'rotate-0'}`}
+                      >
+                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Detalhes expandidos */}
+                    <div className={`overflow-hidden transition-all duration-300 ${expandedMap[c.id] ? 'max-h-96 mt-4 opacity-100' : 'max-h-0 mt-0 opacity-0'}`}>
+                      <div className="border-t border-blue-100 pt-3 space-y-2">
+                        {c.email && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="text-blue-600">✉️</span>
+                            <a className="text-gray-700 hover:text-blue-600" href={`mailto:${c.email}`}>{c.email}</a>
+                          </div>
                         )}
+                        {c.address && (
+                          <div className="flex items-start gap-2 text-sm">
+                            <span className="text-blue-600">📍</span>
+                            <span className="text-gray-700">{c.address}</span>
+                          </div>
+                        )}
+                        {c.notes && (
+                          <div className="flex items-start gap-2 text-sm">
+                            <span className="text-blue-600">📝</span>
+                            <span className="text-gray-600 italic">{c.notes}</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2 pt-2">
+                          <button 
+                            onClick={() => startEdit(c)} 
+                            className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
+                          >
+                            ✏️ Editar
+                          </button>
+                          <button 
+                            onClick={() => remove(c.id)} 
+                            className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
+                          >
+                            🗑️ Excluir
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => toggleExpanded(c.id)} aria-label={expandedMap[c.id] ? 'Ocultar detalhes' : 'Mostrar detalhes'} className={`p-2 rounded-full hover:bg-gray-100 transition-transform duration-200 ${expandedMap[c.id] ? 'rotate-180' : 'rotate-0'}`}>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600 transform transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M10 3a1 1 0 01.707.293l5 5a1 1 0 11-1.414 1.414L10 5.414 5.707 9.707A1 1 0 114.293 8.293l5-5A1 1 0 0110 3z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
-
-                {/* expanded details */}
-                <div className={`overflow-hidden transition-all duration-200 ${expandedMap[c.id] ? 'max-h-96 mt-3 opacity-100' : 'max-h-0 mt-0 opacity-0'}`}>
-                  <div className="text-sm text-gray-700 space-y-2">
-                    {c.address && <div className="flex items-start gap-2">📍 <span className="truncate">{c.address}</span></div>}
-                    {c.email && <div className="flex items-start gap-2 text-gray-700">✉️ <a className="truncate hover:underline" href={`mailto:${c.email}`}>{c.email}</a></div>}
-                    {c.notes && <div className="text-xs text-gray-500">📝 {c.notes}</div>}
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={() => startEdit(c)} className="py-1 px-3 text-sm bg-yellow-50 text-yellow-800 rounded">Editar</button>
-                      <button onClick={() => remove(c.id)} className="py-1 px-3 text-sm bg-red-50 text-red-600 rounded">Excluir</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

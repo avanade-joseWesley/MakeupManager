@@ -178,7 +178,7 @@ export default function Clients({ user }: { user?: any }) {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-2">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center">📋 Lista de Clientes</h2>
             <button 
@@ -277,7 +277,7 @@ export default function Clients({ user }: { user?: any }) {
                 aria-label="Buscar" 
                 type="text" 
                 className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg bg-gray-50 focus:border-blue-500 focus:outline-none transition-colors" 
-                placeholder="🔍 Buscar clientes..." 
+                placeholder="Buscar clientes..." 
                 value={query} 
                 onChange={e => setQuery(e.target.value)} 
               />
@@ -306,27 +306,37 @@ export default function Clients({ user }: { user?: any }) {
             <div className="space-y-3">
               {filtered.map(c => (
                 <div key={c.id} className="bg-gradient-to-r from-white to-blue-50 border border-blue-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                          {(c.name || ' ')[0].toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
+                  <div className="p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg flex-shrink-0">
+                        {(c.name || ' ')[0].toUpperCase()}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
                           <div className="font-semibold text-gray-800 truncate">{c.name}</div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <a 
-                              className="text-green-600 hover:text-green-700 font-medium" 
-                              href={`https://wa.me/55${String(c.phone).replace(/\D/g, '')}`} 
-                              target="_blank" 
-                              rel="noreferrer"
-                            >
-                              📱 {formatPhone(c.phone)}
-                            </a>
-                          </div>
+                          <button 
+                            onClick={() => toggleExpanded(c.id)} 
+                            className={`ml-auto flex-shrink-0 p-1 rounded-full hover:bg-blue-100 transition-all duration-200 ${expandedMap[c.id] ? 'rotate-180 bg-blue-100' : 'rotate-0'}`}
+                          >
+                            <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <a 
+                            className="text-green-600 hover:text-green-700 font-medium text-sm block" 
+                            href={`https://wa.me/55${String(c.phone).replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                          >
+                            📱 {formatPhone(c.phone)}
+                          </a>
                           {c.instagram && (
                             <a 
-                              className="text-pink-600 text-sm hover:text-pink-700 font-medium" 
+                              className="text-pink-600 text-sm hover:text-pink-700 font-medium block" 
                               target="_blank" 
                               rel="noreferrer" 
                               href={`https://instagram.com/${String(c.instagram).replace(/^@/, '')}`}
@@ -336,15 +346,6 @@ export default function Clients({ user }: { user?: any }) {
                           )}
                         </div>
                       </div>
-
-                      <button 
-                        onClick={() => toggleExpanded(c.id)} 
-                        className={`p-2 rounded-full hover:bg-blue-100 transition-all duration-200 ${expandedMap[c.id] ? 'rotate-180 bg-blue-100' : 'rotate-0'}`}
-                      >
-                        <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
                     </div>
 
                     {/* Detalhes expandidos */}

@@ -41,10 +41,16 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   
   // Estados dos modais
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
-  const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [whatsappMessage, setWhatsappMessage] = useState('')
+  
+  // Estados do modal de agendamento
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [appointmentAddress, setAppointmentAddress] = useState('')
-  const [isAppointmentConfirmed, setIsAppointmentConfirmed] = useState(true)
+  const [isAppointmentConfirmed, setIsAppointmentConfirmed] = useState(false)
+
+  // Estados de pagamento
+  const [downPaymentAmount, setDownPaymentAmount] = useState('0')
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'partial'>('pending')
   
   // Múltiplos serviços no agendamento
   const [appointmentServices, setAppointmentServices] = useState<Array<{
@@ -285,41 +291,43 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
   const createAppointment = async () => {
     if (!user || !user.id) {
-      alert('Usuário não autenticado!')
+      alert('Erro: Usuário não autenticado')
       return
     }
 
-    if (isAppointmentConfirmed && !appointmentAddress.trim()) {
-      alert('Por favor, informe o endereço do agendamento!')
+    if (!clientName || !clientPhone) {
+      alert('Por favor, preencha o nome e telefone do cliente!')
       return
     }
 
     if (calculatedPrices.services.length === 0) {
-      alert('Por favor, adicione pelo menos um serviço ao agendamento!')
+      alert('Por favor, selecione pelo menos um serviço!')
+      return
+    }
+
+    if (!selectedArea) {
+      alert('Por favor, selecione uma região!')
+      return
+    }
+
+    if (isAppointmentConfirmed && !appointmentAddress.trim()) {
+      alert('Por favor, preencha o endereço do agendamento!')
       return
     }
 
     try {
-      // 1. Verificar se o cliente já existe (pelo telefone)
-      let clientId = null
-      const { data: existingClients } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('phone', clientPhone)
-        .eq('user_id', user.id)
+      // 1. Verificar se o cliente existe, se não existir, criar
+      let clientId = knownClients.find(c => c.name === clientName)?.id
 
-      if (existingClients && existingClients.length > 0) {
-        // Cliente já existe
-        clientId = existingClients[0].id
-      } else {
-        // 2. Criar novo cliente
+      if (!clientId) {
+        // Criar novo cliente
         const { data: newClient, error: clientError } = await supabase
           .from('clients')
           .insert({
+            user_id: user.id,
             name: clientName,
             phone: clientPhone,
-            address: null, // Endereço fica na tabela appointments
-            user_id: user.id
+            address: appointmentAddress || null
           })
           .select('id')
           .single()
@@ -328,34 +336,76 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         clientId = newClient.id
       }
 
-      // 3. Calcular preço total de todos os serviços
-      const totalPrice = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+      // 2. Calcular valores de pagamento
+      const totalServiceValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+      const downPaymentPaid = parseFloat(downPaymentAmount || '0')
 
-      // 4. Criar agendamento (por enquanto apenas com o primeiro serviço - depois implementar múltiplos)
-      const firstService = calculatedPrices.services[0]
+      // Determinar status do pagamento
+      let finalPaymentStatus: 'pending' | 'paid' | 'partial' = 'pending'
+      if (isAppointmentConfirmed) {
+        if (totalServiceValue === 0) {
+          finalPaymentStatus = 'paid' // Serviço gratuito
+        } else if (downPaymentPaid >= totalServiceValue) {
+          finalPaymentStatus = 'paid' // Pago integralmente
+        } else if (downPaymentPaid > 0) {
+          finalPaymentStatus = 'partial' // Pagamento parcial
+        } else {
+          finalPaymentStatus = 'pending' // Pendente
+        }
+      }
+
+      // 3. Criar o agendamento
       const { data: appointment, error: appointmentError } = await supabase
         .from('appointments')
         .insert({
           user_id: user.id,
           client_id: clientId,
-          service_id: firstService.serviceId,
           service_area_id: selectedArea,
-          quantity: firstService.quantity,
-          unit_price: firstService.unitPrice,
-          total_price: totalPrice, // Total de todos os serviços
+          scheduled_date: null, // Será definido depois
+          scheduled_time: null, // Será definido depois
           status: isAppointmentConfirmed ? 'confirmed' : 'pending',
-          appointment_address: isAppointmentConfirmed ? appointmentAddress : null
+          appointment_address: appointmentAddress || null,
+          total_received: downPaymentPaid,
+
+          // Campos de pagamento
+          payment_down_payment_paid: downPaymentPaid,
+          payment_total_service: totalServiceValue,
+          payment_status: finalPaymentStatus,
+
+          notes: `Agendamento criado via calculadora - ${calculatedPrices.services.length} serviço(s)`
         })
-        .select()
+        .select('id')
         .single()
 
       if (appointmentError) throw appointmentError
 
+      // 4. Inserir os serviços do agendamento
+      const appointmentServicesData = calculatedPrices.services.map(service => ({
+        appointment_id: appointment.id,
+        service_id: service.serviceId,
+        quantity: service.quantity,
+        unit_price: service.unitPrice,
+        total_price: service.totalPrice
+      }))
+
+      const { error: servicesError } = await supabase
+        .from('appointment_services')
+        .insert(appointmentServicesData)
+
+      if (servicesError) throw servicesError
+
+      // 5. Sucesso - fechar modal e limpar dados
       alert(`✅ Agendamento ${isAppointmentConfirmed ? 'confirmado' : 'criado'} com sucesso!`)
+      
       setShowAppointmentModal(false)
       setAppointmentAddress('')
-      setAppointmentServices([])
-      setIsAppointmentConfirmed(true)
+      setIsAppointmentConfirmed(false)
+      setDownPaymentAmount('0')
+      setPaymentStatus('pending')
+
+      // Recarregar lista de clientes para incluir o novo (se foi criado)
+      loadData()
+
     } catch (error: any) {
       console.error('Erro ao criar agendamento:', error)
       alert(`Erro ao criar agendamento: ${error.message}`)
@@ -668,7 +718,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-gray-800">Total:</span>
-                  <span className="text-3xl font-bold text-green-600">R$ {(() => {
+                  <span className="text-2xl font-bold text-green-600">R$ {(() => {
                     const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
                     const area = areas.find(a => a.id === selectedArea)
                     const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
@@ -707,12 +757,13 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       <span>📱</span>
                       <span>Enviar Orçamento</span>
                     </button>
+                    
                     <button
                       onClick={() => setShowAppointmentModal(true)}
                       className="w-full py-4 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 shadow-md hover:shadow-lg text-base"
                     >
                       <span>📅</span>
-                      <span>Agendar Serviço</span>
+                      <span>Criar Agendamento</span>
                     </button>
                   </div>
                 </div>
@@ -777,120 +828,122 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       {/* Modal Agendamento */}
       {showAppointmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full">
-            <div className="p-6">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto">
+            <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
                 📅 {isAppointmentConfirmed ? 'Confirmar' : 'Criar'} Agendamento
               </h3>
               
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    👤 Cliente
-                  </label>
-                  <input
-                    type="text"
-                    value={clientName}
-                    readOnly
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📱 Telefone
-                  </label>
-                  <input
-                    type="tel"
-                    value={clientPhone}
-                    readOnly
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
-                  />
+                {/* Cliente e Telefone lado a lado em telas maiores */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      👤 Cliente
+                    </label>
+                    <input
+                      type="text"
+                      value={clientName}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      📱 Telefone
+                    </label>
+                    <input
+                      type="tel"
+                      value={clientPhone}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+                    />
+                  </div>
                 </div>
 
                 {/* Serviços do Agendamento */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    � Serviços do Agendamento
+                    💄 Serviços do Agendamento
                   </label>
                   
-                  {/* Lista de serviços adicionados */}
+                  {/* Lista de serviços selecionados - compacta */}
                   {calculatedPrices.services.length > 0 && (
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-2 mb-3 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
                       {calculatedPrices.services.map((service, index) => {
                         const serviceInfo = services.find(s => s.id === service.serviceId)
+                        const regionalPrice = regionalPrices.find(
+                          rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
+                        )
+                        const isRegionalPrice = !!regionalPrice
+
                         return (
-                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-800">
-                                {serviceInfo?.name}
+                          <div key={index} className="p-2 bg-gray-50 rounded border text-sm">
+                            <div className="flex justify-between items-center">
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium text-gray-800 text-sm">
+                                  {service.quantity}x {serviceInfo?.name}
+                                </span>
+                                {isRegionalPrice && (
+                                  <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                    ⭐
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-sm text-gray-600">
-                                {service.quantity}x × R$ {service.unitPrice.toFixed(2)} = R$ {service.totalPrice.toFixed(2)}
-                              </div>
+                              <span className="font-bold text-green-600 text-sm ml-2">
+                                R$ {service.totalPrice.toFixed(2)}
+                              </span>
                             </div>
-                            <button
-                              onClick={() => {
-                                setAppointmentServices(prev => prev.filter((_, i) => i !== index))
-                              }}
-                              className="ml-2 p-1 text-red-500 hover:text-red-700"
-                            >
-                              🗑️
-                            </button>
                           </div>
                         )
                       })}
                     </div>
                   )}
+                </div>
 
-                  {/* Adicionar novo serviço */}
-                  <div className="flex space-x-2">
-                    <select
-                      value={selectedService}
-                      onChange={(e) => setSelectedService(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                    >
-                      <option value="">Selecione um serviço</option>
-                      {services.map((service) => (
-                        <option key={service.id} value={service.id}>
-                          {service.name} - R$ {service.price.toFixed(2)}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min="1"
-                      placeholder="Qtd"
-                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && selectedService) {
-                          const quantity = parseInt((e.target as HTMLInputElement).value) || 1
-                          addServiceToAppointment(selectedService, quantity)
-                          setSelectedService('')
-                          ;(e.target as HTMLInputElement).value = ''
-                        }
-                      }}
-                    />
-                    <button
-                      onClick={() => {
-                        if (selectedService) {
-                          const quantityInput = document.querySelector('input[placeholder="Qtd"]') as HTMLInputElement
-                          const quantity = parseInt(quantityInput?.value) || 1
-                          addServiceToAppointment(selectedService, quantity)
-                          setSelectedService('')
-                          if (quantityInput) quantityInput.value = ''
-                        }
-                      }}
-                      disabled={!selectedService}
-                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
-                    >
-                      ➕
-                    </button>
+                {/* Seção de Pagamento */}
+                <div className="border-t border-gray-200 pt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    💳 Informações de Pagamento
+                  </label>
+
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      💰 Valor da Entrada Paga
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-gray-500 text-sm">R$</span>
+                      <input
+                        type="number"
+                        value={downPaymentAmount}
+                        onChange={(e) => setDownPaymentAmount(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                        placeholder="0,00"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status do pagamento calculado */}
+                  <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                    <strong>📊 Status calculado:</strong>{' '}
+                    {(() => {
+                      const totalValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                      const downPayment = parseFloat(downPaymentAmount || '0')
+                      const pending = totalValue - downPayment
+
+                      if (totalValue === 0) return 'Pago (serviço gratuito)'
+                      if (downPayment >= totalValue) return 'Pago (integral)'
+                      if (downPayment > 0) return `Parcial (falta R$ ${pending.toFixed(2)})`
+                      return 'Pendente'
+                    })()}
                   </div>
                 </div>
 
                 {/* Checkbox para confirmar agendamento */}
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 py-2 border-t border-gray-200">
                   <input
                     type="checkbox"
                     id="isAppointmentConfirmed"
@@ -905,33 +958,52 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 
                 {isAppointmentConfirmed && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       📍 Endereço do Agendamento *
                     </label>
                     <textarea
                       value={appointmentAddress}
                       onChange={(e) => setAppointmentAddress(e.target.value)}
-                      className="w-full h-24 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
                       placeholder="Digite o endereço completo do agendamento"
                     />
                   </div>
                 )}
                 
-                <div className={`p-4 rounded-lg ${isAppointmentConfirmed ? 'bg-blue-50' : 'bg-orange-50'}`}>
+                <div className={`p-3 rounded-lg text-sm ${isAppointmentConfirmed ? 'bg-blue-50 border border-blue-200' : 'bg-orange-50 border border-orange-200'}`}>
                   <div className={`text-sm ${isAppointmentConfirmed ? 'text-blue-800' : 'text-orange-800'}`}>
                     <strong>💄 Serviços:</strong><br />
-                    {appointmentServices.map((service, index) => {
+                    {calculatedPrices.services.map((service, index) => {
                       const serviceInfo = services.find(s => s.id === service.serviceId)
+                      const regionalPrice = regionalPrices.find(
+                        rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
+                      )
                       return (
                         <div key={index} className="ml-2">
                           • {service.quantity}x {serviceInfo?.name} - R$ {service.totalPrice.toFixed(2)}
+                          {regionalPrice && <span className="text-blue-600"> ⭐</span>}
                         </div>
                       )
                     })}
                     <br />
                     <strong>� Local:</strong> {areas.find(a => a.id === selectedArea)?.name}<br />
-                    <strong>💰 Total geral:</strong> R$ {appointmentServices.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}<br />
+                    <strong>💰 Total geral:</strong> R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}
+                    {parseFloat(downPaymentAmount || '0') > 0 && (
+                      <>
+                        <br />
+                        <strong>💳 Entrada paga:</strong> R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}
+                        <br />
+                        <strong>⏳ Pendente:</strong> R$ {(calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0) - parseFloat(downPaymentAmount || '0')).toFixed(2)}
+                      </>
+                    )}
+                    <br />
                     <strong>📊 Status:</strong> {isAppointmentConfirmed ? 'Confirmado' : 'Pendente'}
+                    {isAppointmentConfirmed && appointmentAddress && (
+                      <>
+                        <br />
+                        <strong>🏠 Endereço:</strong> {appointmentAddress}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -941,16 +1013,17 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   onClick={() => {
                     setShowAppointmentModal(false)
                     setAppointmentAddress('')
-                    setAppointmentServices([])
-                    setIsAppointmentConfirmed(true)
+                    setIsAppointmentConfirmed(false)
+                    setDownPaymentAmount('0')
+                    setPaymentStatus('pending')
                   }}
-                  className="flex-1 py-3 px-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 py-2 px-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={createAppointment}
-                  className={`flex-1 py-3 px-4 text-white rounded-lg font-medium transition-colors ${
+                  className={`flex-1 py-2 px-4 text-white rounded-lg font-medium transition-colors text-sm ${
                     isAppointmentConfirmed 
                       ? 'bg-blue-500 hover:bg-blue-600' 
                       : 'bg-orange-500 hover:bg-orange-600'

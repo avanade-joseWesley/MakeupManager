@@ -36,11 +36,14 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   const [calculatedPrice, setCalculatedPrice] = useState(0)
   const [totalWithTravel, setTotalWithTravel] = useState(0)
   
-  // Novas opções
+  // Opções adicionais
   const [includeTravelFee, setIncludeTravelFee] = useState(false)
-  const [includeCancellationFee, setIncludeCancellationFee] = useState(false)
-  const [cancellationFeePercent, setCancellationFeePercent] = useState(20)
-  const [cancellationPercentValid, setCancellationPercentValid] = useState<boolean>(true)
+  
+  // Estados dos modais
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false)
+  const [whatsappMessage, setWhatsappMessage] = useState('')
+  const [appointmentAddress, setAppointmentAddress] = useState('')
   
   // Dados do cliente
   const [clientName, setClientName] = useState('')
@@ -131,7 +134,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
   useEffect(() => {
     calculatePrice()
-  }, [selectedService, selectedArea, services, areas, regionalPrices, includeTravelFee, includeCancellationFee, cancellationFeePercent])
+  }, [selectedService, selectedArea, services, areas, regionalPrices, includeTravelFee])
 
   const calculatePrice = () => {
     if (!selectedService || !selectedArea) {
@@ -158,17 +161,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     let finalPrice = basePrice
 
     // Taxa de deslocamento (opcional - não adicionar se já tem preço regional)
-    let travelFee = 0
-    if (includeTravelFee && !regionalPrice) {
-      travelFee = area.travel_fee
-      finalPrice += travelFee
-    }
-
-    // Taxa de cancelamento (opcional)
-    let cancellationFee = 0
-    if (includeCancellationFee) {
-      cancellationFee = (finalPrice * cancellationFeePercent) / 100
-      finalPrice += cancellationFee
+    if (includeTravelFee && !regionalPrice && area.travel_fee > 0) {
+      finalPrice += area.travel_fee
     }
 
     setTotalWithTravel(finalPrice)
@@ -206,22 +200,50 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       }
     }
     
-    if (includeCancellationFee) {
-      const cancelFee = (calculatedPrice + (includeTravelFee && !regionalPrice && area ? area.travel_fee : 0)) * cancellationFeePercent / 100
-      message += `• Taxa de cancelamento (${cancellationFeePercent}%): R$ ${cancelFee.toFixed(2)}\n`
-    }
-    
     message += `\n🎯 *TOTAL: R$ ${totalWithTravel.toFixed(2)}*\n\n`
     message += `⏰ *Duração:* ${service?.duration_minutes} minutos\n\n`
     message += `✨ Orçamento válido por 7 dias\n`
     message += `📞 Para confirmar, responda esta mensagem!`
 
-    // Criar URL do WhatsApp
-    const encodedMessage = encodeURIComponent(message)
+    setWhatsappMessage(message)
+    setShowWhatsAppModal(true)
+  }
+
+  const confirmSendWhatsApp = () => {
+    const encodedMessage = encodeURIComponent(whatsappMessage)
     const whatsappUrl = `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=${encodedMessage}`
-    
-    // Abrir WhatsApp
     window.open(whatsappUrl, '_blank')
+    setShowWhatsAppModal(false)
+  }
+
+  const createAppointment = async () => {
+    if (!appointmentAddress.trim()) {
+      alert('Por favor, informe o endereço do agendamento!')
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({
+          name: clientName,
+          phone: clientPhone,
+          address: appointmentAddress,
+          user_id: user?.id,
+          status: 'confirmed'
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      alert('✅ Agendamento confirmado com sucesso!')
+      setShowAppointmentModal(false)
+      setAppointmentAddress('')
+    } catch (error: any) {
+      console.error('Erro ao criar agendamento:', error)
+      alert(`Erro ao criar agendamento: ${error.message}`)
+    }
   }
 
   return (
@@ -306,7 +328,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         {/* Opções de Taxa */}
         {selectedService && selectedArea && (
           <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-            <h4 className="font-medium text-gray-800">⚙️ Opções de Taxa</h4>
+            <h4 className="font-medium text-gray-800">⚙️ Opções Adicionais</h4>
             
             {/* Taxa de Deslocamento */}
             {(() => {
@@ -330,55 +352,6 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 </div>
               )
             })()}
-
-            {/* Taxa de Cancelamento */}
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="includeCancellationFee"
-                  checked={includeCancellationFee}
-                  onChange={(e) => {
-                    // only allow enabling if percent is valid
-                    if (e.target.checked && !cancellationPercentValid) {
-                      alert('Corrija o percentual antes de ativar a taxa de cancelamento.')
-                      return
-                    }
-                    setIncludeCancellationFee(e.target.checked)
-                  }}
-                  className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                />
-                <label htmlFor="includeCancellationFee" className="text-sm text-gray-700">
-                  Incluir taxa de cancelamento
-                </label>
-              </div>
-              
-              {includeCancellationFee && (
-                <div className="ml-7 flex items-center space-x-2">
-                  <label htmlFor="cancellationPercent" className="text-sm text-gray-600">
-                    Percentual:
-                  </label>
-                  <NumericInput
-                    id="cancellationPercent"
-                    value={String(cancellationFeePercent)}
-                    onChange={(v) => {
-                      const n = parseInt(v, 10)
-                      setCancellationFeePercent(Number.isNaN(n) ? 0 : n)
-                    }}
-                    decimalPlaces={null}
-                    allowComma={false}
-                    min={0}
-                    max={100}
-                    className="w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    onValidate={(valid) => setCancellationPercentValid(valid)}
-                  />
-                  <span className="text-sm text-gray-600">%</span>
-                  {!cancellationPercentValid && (
-                    <p className="text-xs text-red-600 ml-2">Percentual inválido (0-100).</p>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         )}
 
@@ -424,16 +397,6 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                         <span className="font-medium text-orange-600">+ R$ {area.travel_fee.toFixed(2)}</span>
                       </div>
                     )}
-
-                    {/* Taxa de cancelamento */}
-                    {includeCancellationFee && (
-                      <div className="flex justify-between">
-                        <span className="text-red-600">Taxa de cancelamento ({cancellationFeePercent}%):</span>
-                        <span className="font-medium text-red-600">
-                          + R$ {((calculatedPrice + (includeTravelFee && !isRegionalPrice && area ? area.travel_fee : 0)) * cancellationFeePercent / 100).toFixed(2)}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 )
               })()}
@@ -459,27 +422,25 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 </div>
               )}
 
-              {/* Aviso sobre taxa de cancelamento */}
-              {includeCancellationFee && (
-                <div className="p-3 bg-red-50 rounded-lg">
-                  <div className="text-sm text-red-800">
-                    <strong>⚠️ Taxa de cancelamento incluída!</strong>
-                    <br />
-                    {cancellationFeePercent}% do valor total será cobrado em caso de cancelamento.
-                  </div>
-                </div>
-              )}
-
-              {/* Botão WhatsApp */}
+              {/* Botões de Ação */}
               {clientName && clientPhone && (
-                <div className="mt-4">
-                  <button
-                    onClick={sendWhatsAppBudget}
-                    className="w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <span>📱</span>
-                    <span>Enviar Orçamento pelo WhatsApp</span>
-                  </button>
+                <div className="mt-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button
+                      onClick={sendWhatsAppBudget}
+                      className="py-3 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <span>📱</span>
+                      <span>Enviar Orçamento</span>
+                    </button>
+                    <button
+                      onClick={() => setShowAppointmentModal(true)}
+                      className="py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <span>📅</span>
+                      <span>Agendar Serviço</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -497,6 +458,120 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           </ul>
         </div>
       </div>
+
+      {/* Modal WhatsApp */}
+      {showWhatsAppModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                📱 Revisar Mensagem do WhatsApp
+              </h3>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mensagem que será enviada:
+                </label>
+                <textarea
+                  value={whatsappMessage}
+                  onChange={(e) => setWhatsappMessage(e.target.value)}
+                  className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  placeholder="Mensagem do WhatsApp"
+                />
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowWhatsAppModal(false)}
+                  className="flex-1 py-3 px-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmSendWhatsApp}
+                  className="flex-1 py-3 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  📱 Enviar pelo WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Agendamento */}
+      {showAppointmentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                📅 Confirmar Agendamento
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    👤 Cliente
+                  </label>
+                  <input
+                    type="text"
+                    value={clientName}
+                    readOnly
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📱 Telefone
+                  </label>
+                  <input
+                    type="tel"
+                    value={clientPhone}
+                    readOnly
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📍 Endereço do Agendamento *
+                  </label>
+                  <textarea
+                    value={appointmentAddress}
+                    onChange={(e) => setAppointmentAddress(e.target.value)}
+                    className="w-full h-24 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    placeholder="Digite o endereço completo do agendamento"
+                  />
+                </div>
+                
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-blue-800">
+                    <strong>💄 Serviço:</strong> {services.find(s => s.id === selectedService)?.name}<br />
+                    <strong>📍 Local:</strong> {areas.find(a => a.id === selectedArea)?.name}<br />
+                    <strong>💰 Valor:</strong> R$ {totalWithTravel.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => setShowAppointmentModal(false)}
+                  className="flex-1 py-3 px-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={createAppointment}
+                  className="flex-1 py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  ✅ Confirmar Agendamento
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

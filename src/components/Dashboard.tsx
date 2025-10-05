@@ -66,7 +66,7 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
               <div></div>
             </div>
           </div>
-          <PriceCalculator user={user} />
+          <PriceCalculator user={user} onNavigateToClients={() => setCurrentView('clients')} />
         </Container>
       </div>
     )

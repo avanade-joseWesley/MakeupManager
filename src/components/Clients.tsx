@@ -325,9 +325,9 @@ export default function Clients({ user }: { user?: any }) {
                           </button>
                         </div>
                         
-                        <div className="space-y-1">
+                        <div className="flex items-center flex-wrap">
                           <a 
-                            className="text-green-600 hover:text-green-700 font-medium text-sm block" 
+                            className="text-green-600 hover:text-green-700 font-medium text-sm" 
                             href={`https://wa.me/55${String(c.phone).replace(/\D/g, '')}`} 
                             target="_blank" 
                             rel="noreferrer"
@@ -336,7 +336,7 @@ export default function Clients({ user }: { user?: any }) {
                           </a>
                           {c.instagram && (
                             <a 
-                              className="text-pink-600 text-sm hover:text-pink-700 font-medium block" 
+                              className="text-pink-600 text-sm hover:text-pink-700 font-medium" 
                               target="_blank" 
                               rel="noreferrer" 
                               href={`https://instagram.com/${String(c.instagram).replace(/^@/, '')}`}

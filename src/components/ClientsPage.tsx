@@ -1,6 +1,7 @@
 import React from 'react'
 import Clients from './Clients'
 import ErrorBoundary from './ErrorBoundary'
+import { Container } from './Container'
 
 interface ClientsPageProps {
   onBack: () => void
@@ -9,7 +10,7 @@ interface ClientsPageProps {
 export default function ClientsPage({ onBack, user }: ClientsPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-4">
-      <div className="w-full max-w-sm mx-auto px-4 space-y-4">
+      <Container className="space-y-4">
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-2xl shadow-xl">
           <div className="flex items-center justify-between">
             <button onClick={onBack} className="text-blue-100 hover:text-white transition-colors">← Voltar</button>
@@ -21,7 +22,7 @@ export default function ClientsPage({ onBack, user }: ClientsPageProps) {
         <ErrorBoundary>
           <Clients user={user} />
         </ErrorBoundary>
-      </div>
+      </Container>
     </div>
   )
 }

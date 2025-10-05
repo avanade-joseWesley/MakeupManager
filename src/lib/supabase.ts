@@ -39,6 +39,192 @@ export type Database = {
           updated_at?: string
         }
       }
+      clients: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          phone: string
+          address: string | null
+          instagram: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          phone: string
+          address?: string | null
+          instagram?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          phone?: string
+          address?: string | null
+          instagram?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      services: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          price: number
+          duration_minutes: number
+          service_category_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          price: number
+          duration_minutes: number
+          service_category_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          price?: number
+          duration_minutes?: number
+          service_category_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      service_categories: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      service_areas: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          travel_fee: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          travel_fee: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          travel_fee?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      service_regional_prices: {
+        Row: {
+          id: string
+          user_id: string
+          service_id: string
+          service_area_id: string
+          price: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          service_id: string
+          service_area_id: string
+          price: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          service_id?: string
+          service_area_id?: string
+          price?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      appointments: {
+        Row: {
+          id: string
+          user_id: string
+          client_id: string
+          service_id: string
+          service_area_id: string
+          quantity: number
+          unit_price: number
+          total_price: number
+          status: string
+          appointment_address: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          client_id: string
+          service_id: string
+          service_area_id: string
+          quantity: number
+          unit_price: number
+          total_price: number
+          status: string
+          appointment_address?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          client_id?: string
+          service_id?: string
+          service_area_id?: string
+          quantity?: number
+          unit_price?: number
+          total_price?: number
+          status?: string
+          appointment_address?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

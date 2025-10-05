@@ -13,7 +13,6 @@
     "deploy:force": "gh-pages -d dist"
   },
   "dependencies": {
-    "@esbuild/win32-x64": "^0.25.10",
     "@supabase/supabase-js": "^2.38.0",
     "clsx": "^2.0.0",
     "cors": "^2.8.5",
@@ -38,6 +37,6 @@
     "postcss": "^8.4.27",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.0.2",
-    "vite": "^4.4.5"
+    "vite": "^4.5.5"
   }
 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import { LoginForm } from './components/LoginForm'
 import { Dashboard } from './components/Dashboard'
+import ErrorBoundary from './components/ErrorBoundary'
 import type { User } from '@supabase/supabase-js'
 import './App.css'
 
@@ -41,7 +42,11 @@ function App() {
     return <LoginForm onSuccess={() => {}} />
   }
 
-  return <Dashboard user={user} onLogout={() => setUser(null)} />
+  return (
+    <ErrorBoundary>
+      <Dashboard user={user} onLogout={() => setUser(null)} />
+    </ErrorBoundary>
+  )
 }
 
 export default App

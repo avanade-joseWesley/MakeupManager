@@ -44,6 +44,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [whatsappMessage, setWhatsappMessage] = useState('')
   const [appointmentAddress, setAppointmentAddress] = useState('')
+  const [isAppointmentConfirmed, setIsAppointmentConfirmed] = useState(true)
   
   // Dados do cliente
   const [clientName, setClientName] = useState('')
@@ -217,7 +218,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   }
 
   const createAppointment = async () => {
-    if (!appointmentAddress.trim()) {
+    if (isAppointmentConfirmed && !appointmentAddress.trim()) {
       alert('Por favor, informe o endereço do agendamento!')
       return
     }
@@ -228,18 +229,19 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         .insert({
           name: clientName,
           phone: clientPhone,
-          address: appointmentAddress,
+          address: isAppointmentConfirmed ? appointmentAddress : null,
           user_id: user?.id,
-          status: 'confirmed'
+          status: isAppointmentConfirmed ? 'confirmed' : 'pending'
         })
         .select()
         .single()
 
       if (error) throw error
 
-      alert('✅ Agendamento confirmado com sucesso!')
+      alert(`✅ Agendamento ${isAppointmentConfirmed ? 'confirmado' : 'criado'} com sucesso!`)
       setShowAppointmentModal(false)
       setAppointmentAddress('')
+      setIsAppointmentConfirmed(true)
     } catch (error: any) {
       console.error('Erro ao criar agendamento:', error)
       alert(`Erro ao criar agendamento: ${error.message}`)
@@ -507,7 +509,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                📅 Confirmar Agendamento
+                📅 {isAppointmentConfirmed ? 'Confirmar' : 'Criar'} Agendamento
               </h3>
               
               <div className="space-y-4">
@@ -534,40 +536,65 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50"
                   />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📍 Endereço do Agendamento *
-                  </label>
-                  <textarea
-                    value={appointmentAddress}
-                    onChange={(e) => setAppointmentAddress(e.target.value)}
-                    className="w-full h-24 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Digite o endereço completo do agendamento"
+
+                {/* Checkbox para confirmar agendamento */}
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="isAppointmentConfirmed"
+                    checked={isAppointmentConfirmed}
+                    onChange={(e) => setIsAppointmentConfirmed(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
+                  <label htmlFor="isAppointmentConfirmed" className="text-sm text-gray-700">
+                    <strong>Confirmar agendamento</strong> (requer endereço)
+                  </label>
                 </div>
                 
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <div className="text-sm text-blue-800">
+                {isAppointmentConfirmed && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      📍 Endereço do Agendamento *
+                    </label>
+                    <textarea
+                      value={appointmentAddress}
+                      onChange={(e) => setAppointmentAddress(e.target.value)}
+                      className="w-full h-24 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      placeholder="Digite o endereço completo do agendamento"
+                    />
+                  </div>
+                )}
+                
+                <div className={`p-4 rounded-lg ${isAppointmentConfirmed ? 'bg-blue-50' : 'bg-orange-50'}`}>
+                  <div className={`text-sm ${isAppointmentConfirmed ? 'text-blue-800' : 'text-orange-800'}`}>
                     <strong>💄 Serviço:</strong> {services.find(s => s.id === selectedService)?.name}<br />
                     <strong>📍 Local:</strong> {areas.find(a => a.id === selectedArea)?.name}<br />
-                    <strong>💰 Valor:</strong> R$ {totalWithTravel.toFixed(2)}
+                    <strong>💰 Valor:</strong> R$ {totalWithTravel.toFixed(2)}<br />
+                    <strong>📊 Status:</strong> {isAppointmentConfirmed ? 'Confirmado' : 'Pendente'}
                   </div>
                 </div>
               </div>
               
               <div className="flex space-x-3 mt-6">
                 <button
-                  onClick={() => setShowAppointmentModal(false)}
+                  onClick={() => {
+                    setShowAppointmentModal(false)
+                    setAppointmentAddress('')
+                    setIsAppointmentConfirmed(true)
+                  }}
                   className="flex-1 py-3 px-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={createAppointment}
-                  className="flex-1 py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+                  className={`flex-1 py-3 px-4 text-white rounded-lg font-medium transition-colors ${
+                    isAppointmentConfirmed 
+                      ? 'bg-blue-500 hover:bg-blue-600' 
+                      : 'bg-orange-500 hover:bg-orange-600'
+                  }`}
                 >
-                  ✅ Confirmar Agendamento
+                  {isAppointmentConfirmed ? '✅ Confirmar' : '📝 Criar'} Agendamento
                 </button>
               </div>
             </div>

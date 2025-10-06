@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { WhatsAppButton } from './WhatsAppButton'
 import { Settings } from './Settings'
 import { PriceCalculator } from './PriceCalculator'
 import ClientsPage from './ClientsPage'
+import AppointmentsPage from './AppointmentsPage'
 import { Container } from './Container'
 
 interface DashboardProps {
@@ -14,7 +15,230 @@ interface DashboardProps {
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [message, setMessage] = useState('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments'>('dashboard')
+  
+  // Estados para dados reais do dashboard
+  const [dashboardData, setDashboardData] = useState({
+    todayAppointments: 0,
+    todayRevenue: 0,
+    pendingAppointments: 0,
+    confirmedAppointments: 0,
+    completedAppointments: 0,
+    monthlyRevenue: 0,
+    upcomingAppointments: [] as any[]
+  })
+  const [loading, setLoading] = useState(true)
+
+  // Buscar dados reais do dashboard
+  const fetchDashboardData = async () => {
+    if (!user?.id) return
+
+    try {
+      const today = new Date()
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+      
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
+
+      // Buscar agendamentos de hoje
+      const { data: todayAppointments, error: todayError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          clients (name, phone),
+          appointment_services (
+            quantity,
+            unit_price,
+            total_price,
+            services (name)
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('scheduled_date', startOfToday.toISOString().split('T')[0])
+        .lte('scheduled_date', endOfToday.toISOString().split('T')[0])
+
+      if (todayError) throw todayError
+
+      // Calcular receita de hoje (apenas o que falta receber)
+      const todayRevenue = todayAppointments?.reduce((total, appointment) => {
+        const totalServiceValue = appointment.appointment_services?.reduce((sum, service) => sum + service.total_price, 0) || 0
+        
+        // Se já foi pago totalmente, não conta na receita prevista
+        if (appointment.payment_status === 'paid') {
+          return total + 0
+        }
+        
+        // Se foi pago parcialmente, conta apenas o que falta receber
+        if (appointment.payment_status === 'partial') {
+          const remaining = (appointment.payment_total_service || totalServiceValue) - (appointment.total_received || 0)
+          return total + Math.max(0, remaining)
+        }
+        
+        // Se não foi pago ainda (pending ou null), conta o valor total
+        return total + totalServiceValue
+      }, 0) || 0
+
+      // Buscar agendamentos pendentes
+      const { data: pendingAppointments, error: pendingError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+
+      if (pendingError) throw pendingError
+
+      // Calcular créditos (pagamentos parciais)
+      const { data: partialPayments, error: creditsError } = await supabase
+        .from('appointments')
+        .select('payment_total_service, total_received')
+        .eq('user_id', user.id)
+        .eq('payment_status', 'partial')
+
+      if (creditsError) throw creditsError
+
+      const credits = partialPayments?.reduce((total, appointment) => {
+        return total + (appointment.payment_total_service - appointment.total_received)
+      }, 0) || 0
+
+      // Buscar agendamentos confirmados do mês
+      const { data: confirmedAppointments, error: confirmedError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'confirmed')
+        .gte('created_at', startOfMonth.toISOString())
+        .lte('created_at', endOfMonth.toISOString())
+
+      if (confirmedError) throw confirmedError
+
+      // Buscar agendamentos realizados do mês
+      const { data: completedAppointments, error: completedError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .gte('created_at', startOfMonth.toISOString())
+        .lte('created_at', endOfMonth.toISOString())
+
+      if (completedError) throw completedError
+
+      // Calcular receita prevista do mês (apenas o que falta receber)
+      const { data: monthlyRevenueData, error: monthlyRevenueError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          appointment_services (
+            total_price
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('created_at', startOfMonth.toISOString())
+        .lte('created_at', endOfMonth.toISOString())
+
+      if (monthlyRevenueError) throw monthlyRevenueError
+
+      const monthlyRevenue = monthlyRevenueData?.reduce((total, appointment) => {
+        const totalServiceValue = appointment.appointment_services?.reduce((sum, service) => sum + service.total_price, 0) || 0
+        
+        // Se já foi pago totalmente, não conta na receita prevista
+        if (appointment.payment_status === 'paid') {
+          return total + 0
+        }
+        
+        // Se foi pago parcialmente, conta apenas o que falta receber
+        if (appointment.payment_status === 'partial') {
+          const remaining = (appointment.payment_total_service || totalServiceValue) - (appointment.total_received || 0)
+          return total + Math.max(0, remaining)
+        }
+        
+        // Se não foi pago ainda (pending ou null), conta o valor total
+        return total + totalServiceValue
+      }, 0) || 0
+
+      // Buscar próximos agendamentos (próximos 5)
+      const { data: upcomingAppointments, error: upcomingError } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          clients (name, phone),
+          appointment_services (
+            quantity,
+            unit_price,
+            total_price,
+            services (name)
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('scheduled_date', new Date().toISOString().split('T')[0])
+        .order('scheduled_date', { ascending: true })
+        .order('scheduled_time', { ascending: true })
+        .limit(5)
+
+      if (upcomingError) throw upcomingError
+
+      setDashboardData({
+        todayAppointments: todayAppointments?.length || 0,
+        todayRevenue,
+        pendingAppointments: pendingAppointments?.length || 0,
+        confirmedAppointments: confirmedAppointments?.length || 0,
+        completedAppointments: completedAppointments?.length || 0,
+        monthlyRevenue,
+        upcomingAppointments: upcomingAppointments || []
+      })
+
+    } catch (error) {
+      console.error('Erro ao buscar dados do dashboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [user?.id])
+
+  // Função helper para renderizar status do agendamento
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'bg-green-100 text-green-800'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'completed': return 'bg-blue-100 text-blue-800'
+      case 'cancelled': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  // Função helper para verificar se agendamento está atrasado
+  const isAppointmentOverdue = (appointment: any) => {
+    if (!appointment.scheduled_date) return false
+    
+    const appointmentDate = new Date(appointment.scheduled_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Zera horas para comparar apenas datas
+    
+    // Se a data já passou e o status ainda é confirmado ou pendente
+    return appointmentDate < today && (appointment.status === 'confirmed' || appointment.status === 'pending')
+  }
+
+  // Função helper para calcular total do agendamento
+  const calculateAppointmentTotal = (appointment: any) => {
+    return appointment.appointment_services?.reduce((sum: number, service: any) => sum + service.total_price, 0) || 0
+  }
+
+  // Função helper para obter nome do serviço principal
+  const getMainServiceName = (appointment: any) => {
+    if (!appointment.appointment_services || appointment.appointment_services.length === 0) {
+      return 'Serviço não especificado'
+    }
+    
+    const firstService = appointment.appointment_services[0]
+    if (appointment.appointment_services.length === 1) {
+      return `${firstService.quantity}x ${firstService.services?.name || 'Serviço'}`
+    }
+    
+    return `${appointment.appointment_services.length} serviços`
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -76,6 +300,10 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
     return <ClientsPage onBack={() => setCurrentView('dashboard')} user={user} />
   }
 
+  if (currentView === 'appointments') {
+    return <AppointmentsPage onBack={() => setCurrentView('dashboard')} user={user} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-4">
       <Container className="space-y-4">
@@ -100,7 +328,7 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <button
             onClick={() => setCurrentView('calculator')}
             className="bg-gradient-to-br from-green-400 to-green-600 text-white p-4 rounded-xl shadow-lg active:scale-95 transition-transform"
@@ -116,6 +344,13 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
             <div className="text-xs font-semibold">Clientes</div>
           </button>
           <button
+            onClick={() => setCurrentView('appointments')}
+            className="bg-gradient-to-br from-orange-400 to-red-500 text-white p-4 rounded-xl shadow-lg active:scale-95 transition-transform"
+          >
+            <div className="text-2xl mb-1">📅</div>
+            <div className="text-xs font-semibold">Agendamentos</div>
+          </button>
+          <button
             onClick={() => setCurrentView('settings')}
             className="bg-gradient-to-br from-purple-400 to-purple-600 text-white p-4 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
@@ -127,24 +362,22 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
         {/* Cards de Status */}
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="bg-white p-4 rounded-xl shadow-lg border-l-4 border-pink-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 font-medium">Hoje</div>
-                <div className="text-2xl font-bold text-pink-600">3</div>
-                <div className="text-xs text-gray-500">agendamentos</div>
+            <div className="text-center">
+              <div className="text-sm text-gray-600 font-medium">Hoje</div>
+              <div className="text-xl font-bold text-pink-600">
+                {loading ? '...' : dashboardData.todayAppointments}
               </div>
-              <div className="text-3xl opacity-60">📅</div>
+              <div className="text-xs text-gray-500">agendamentos</div>
             </div>
           </div>
           
           <div className="bg-white p-4 rounded-xl shadow-lg border-l-4 border-green-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-gray-600 font-medium">Receita</div>
-                <div className="text-xl font-bold text-green-600">R$ 450</div>
-                <div className="text-xs text-gray-500">prevista hoje</div>
+            <div className="text-center">
+              <div className="text-sm text-gray-600 font-medium">Receita</div>
+              <div className="text-lg font-bold text-green-600">
+                {loading ? '...' : `R$ ${dashboardData.todayRevenue.toFixed(2)}`}
               </div>
-              <div className="text-3xl opacity-60">💰</div>
+              <div className="text-xs text-gray-500">prevista hoje</div>
             </div>
           </div>
         </div>
@@ -152,16 +385,22 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
         {/* Status Cards Adicionais */}
         <div className="grid grid-cols-3 gap-2 mb-6">
           <div className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-3 rounded-lg text-center">
-            <div className="text-lg font-bold">2</div>
-            <div className="text-xs opacity-90">Pendentes</div>
+            <div className="text-lg font-bold">
+              {loading ? '...' : dashboardData.pendingAppointments}
+            </div>
+            <div className="text-xs opacity-90">Aguardando Confirmação</div>
           </div>
-          <div className="bg-gradient-to-br from-blue-400 to-blue-600 text-white p-3 rounded-lg text-center">
-            <div className="text-lg font-bold">R$ 125</div>
-            <div className="text-xs opacity-90">Créditos</div>
+          <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-3 rounded-lg text-center">
+            <div className="text-lg font-bold">
+              {loading ? '...' : dashboardData.confirmedAppointments}
+            </div>
+            <div className="text-xs opacity-90">Confirmados</div>
           </div>
           <div className="bg-gradient-to-br from-purple-400 to-pink-500 text-white p-3 rounded-lg text-center">
-            <div className="text-lg font-bold">12</div>
-            <div className="text-xs opacity-90">Este mês</div>
+            <div className="text-lg font-bold text-sm">
+              {loading ? '...' : `R$ ${dashboardData.monthlyRevenue.toFixed(0)}`}
+            </div>
+            <div className="text-xs opacity-90">Previsto mês</div>
           </div>
         </div>
 
@@ -236,54 +475,62 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
           </div>
           
           <div className="divide-y divide-gray-100">
-            <div className="p-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-semibold text-gray-900">Maria Silva</div>
-                <div className="flex items-center space-x-2">
-                  <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">Confirmado</span>
-                  <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
+            {loading ? (
+              <div className="p-8 text-center text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto mb-2"></div>
+                Carregando agendamentos...
+              </div>
+            ) : dashboardData.upcomingAppointments.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <div className="text-4xl mb-2">📅</div>
+                Nenhum agendamento futuro encontrado
+              </div>
+            ) : (
+              dashboardData.upcomingAppointments.map((appointment) => (
+                <div key={appointment.id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-semibold text-gray-900">
+                      {appointment.clients?.name || 'Cliente não informado'}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(appointment.status)}`}>
+                        {appointment.status === 'confirmed' ? 'Confirmado' : 
+                         appointment.status === 'pending' ? 'Aguardando Confirmação' :
+                         appointment.status === 'completed' ? 'Concluído' : 'Cancelado'}
+                      </span>
+                      {isAppointmentOverdue(appointment) && (
+                        <span className="text-orange-500 text-sm animate-pulse" title="Agendamento atrasado - atualizar status">
+                          ⚠️
+                        </span>
+                      )}
+                      <div className={`w-3 h-3 rounded-full ${
+                        appointment.status === 'confirmed' ? 'bg-green-500' :
+                        appointment.status === 'pending' ? 'bg-yellow-500' :
+                        appointment.status === 'completed' ? 'bg-blue-500' : 'bg-red-500'
+                      }`}></div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">
+                    � {getMainServiceName(appointment)}
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>🕐 {appointment.scheduled_date ? 
+                      new Date(appointment.scheduled_date).toLocaleDateString('pt-BR') : 'Data não definida'
+                    }{appointment.scheduled_time ? `, ${appointment.scheduled_time}` : ''}</span>
+                    <span className="font-semibold text-green-600">
+                      R$ {calculateAppointmentTotal(appointment).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="text-sm text-gray-600 mb-1">💒 Maquiagem para Casamento</div>
-              <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>🕐 Hoje, 14:30</span>
-                <span className="font-semibold text-green-600">R$ 200,00</span>
-              </div>
-            </div>
-            
-            <div className="p-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-semibold text-gray-900">Ana Costa</div>
-                <div className="flex items-center space-x-2">
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">Pendente</span>
-                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600 mb-1">✨ Maquiagem Social</div>
-              <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>🕐 Hoje, 16:00</span>
-                <span className="font-semibold text-green-600">R$ 150,00</span>
-              </div>
-            </div>
-            
-            <div className="p-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-semibold text-gray-900">Julia Santos</div>
-                <div className="flex items-center space-x-2">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">Crédito</span>
-                  <div className="w-3 h-3 bg-pink-400 rounded-full"></div>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600 mb-1">💅 Maquiagem + Penteado</div>
-              <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>🕐 Hoje, 18:30</span>
-                <span className="font-semibold text-green-600">R$ 100,00</span>
-              </div>
-            </div>
+              ))
+            )}
           </div>
           
           <div className="p-4 bg-gray-50 border-t">
-            <button className="w-full py-2 text-sm text-pink-600 font-semibold hover:text-pink-700 transition-colors">
+            <button 
+              onClick={() => setCurrentView('appointments')}
+              className="w-full py-2 text-sm text-pink-600 font-semibold hover:text-pink-700 transition-colors"
+            >
               Ver todos os agendamentos →
             </button>
           </div>

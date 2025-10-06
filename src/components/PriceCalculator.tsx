@@ -46,11 +46,16 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   // Estados do modal de agendamento
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [appointmentAddress, setAppointmentAddress] = useState('')
+  const [appointmentDate, setAppointmentDate] = useState('')
+  const [appointmentTime, setAppointmentTime] = useState('')
   const [isAppointmentConfirmed, setIsAppointmentConfirmed] = useState(false)
 
   // Estados de pagamento
   const [downPaymentAmount, setDownPaymentAmount] = useState('0')
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'partial'>('pending')
+
+  // Modal de confirmação de pagamento
+  const [showPaymentConfirmationModal, setShowPaymentConfirmationModal] = useState(false)
   
   // Múltiplos serviços no agendamento
   const [appointmentServices, setAppointmentServices] = useState<Array<{
@@ -202,6 +207,21 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     }
   }, [appointmentServices, selectedArea, services, areas, regionalPrices, includeTravelFee])
 
+  // Definir automaticamente 30% do valor total quando confirmar agendamento
+  useEffect(() => {
+    if (isAppointmentConfirmed && calculatedPrices.services.length > 0) {
+      const totalValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+      const area = areas.find(a => a.id === selectedArea)
+      const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
+        regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
+      )
+      const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+      const finalTotal = totalValue + travelFee
+      const thirtyPercent = (finalTotal * 0.3).toFixed(2)
+      setDownPaymentAmount(thirtyPercent)
+    }
+  }, [isAppointmentConfirmed, calculatedPrices, selectedArea, areas, regionalPrices, includeTravelFee])
+
   // Usar os valores calculados diretamente, sem atualizar o estado
 
   const sendWhatsAppBudget = () => {
@@ -315,6 +335,27 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       return
     }
 
+    if (isAppointmentConfirmed && !appointmentDate) {
+      alert('Por favor, selecione a data do agendamento!')
+      return
+    }
+
+    if (isAppointmentConfirmed && !appointmentTime) {
+      alert('Por favor, selecione o horário do agendamento!')
+      return
+    }
+
+    // Se for agendamento confirmado, mostrar modal de confirmação de pagamento
+    if (isAppointmentConfirmed) {
+      setShowPaymentConfirmationModal(true)
+      return
+    }
+
+    // Para agendamentos pendentes, criar diretamente
+    await createAppointmentConfirmed()
+  }
+
+  const createAppointmentConfirmed = async () => {
     try {
       // 1. Verificar se o cliente existe, se não existir, criar
       let clientId = knownClients.find(c => c.name === clientName)?.id
@@ -361,8 +402,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           user_id: user.id,
           client_id: clientId,
           service_area_id: selectedArea,
-          scheduled_date: null, // Será definido depois
-          scheduled_time: null, // Será definido depois
+          scheduled_date: isAppointmentConfirmed ? appointmentDate : null,
+          scheduled_time: isAppointmentConfirmed ? appointmentTime : null,
           status: isAppointmentConfirmed ? 'confirmed' : 'pending',
           appointment_address: appointmentAddress || null,
           total_received: downPaymentPaid,
@@ -399,6 +440,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       
       setShowAppointmentModal(false)
       setAppointmentAddress('')
+      setAppointmentDate('')
+      setAppointmentTime('')
       setIsAppointmentConfirmed(false)
       setDownPaymentAmount('0')
       setPaymentStatus('pending')
@@ -864,209 +907,425 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
       {/* Modal Agendamento */}
       {showAppointmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto">
-            <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                📅 {isAppointmentConfirmed ? 'Confirmar' : 'Criar'} Agendamento
-              </h3>
-              
-              <div className="space-y-4">
-                {/* Cliente e Telefone lado a lado em telas maiores */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white p-6 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">📅</span>
+                  </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      👤 Cliente
-                    </label>
-                    <input
-                      type="text"
-                      value={clientName}
-                      readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      📱 Telefone
-                    </label>
-                    <input
-                      type="tel"
-                      value={clientPhone}
-                      readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
-                    />
+                    <h2 className="text-xl font-bold">
+                      {isAppointmentConfirmed ? 'Confirmar' : 'Criar'} Agendamento
+                    </h2>
+                    <p className="text-blue-100 text-sm">
+                      {clientName}
+                    </p>
                   </div>
                 </div>
+                <button
+                  onClick={() => setShowAppointmentModal(false)}
+                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                >
+                  <span className="text-white text-lg">×</span>
+                </button>
+              </div>
+            </div>
 
-                {/* Serviços do Agendamento */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    💄 Serviços do Agendamento
+            {/* Body */}
+            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+              {/* Cliente e Telefone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-2xl border border-indigo-100">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <span className="mr-2">👤</span>
+                    Cliente
                   </label>
-                  
-                  {/* Lista de serviços selecionados - compacta */}
-                  {calculatedPrices.services.length > 0 && (
-                    <div className="space-y-2 mb-3 max-h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                      {calculatedPrices.services.map((service, index) => {
-                        const serviceInfo = services.find(s => s.id === service.serviceId)
-                        const regionalPrice = regionalPrices.find(
-                          rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
-                        )
-                        const isRegionalPrice = !!regionalPrice
-
-                        return (
-                          <div key={index} className="p-2 bg-gray-50 rounded border text-sm">
-                            <div className="flex justify-between items-center">
-                              <div className="flex-1 min-w-0">
-                                <span className="font-medium text-gray-800 text-sm">
-                                  {service.quantity}x {serviceInfo?.name}
-                                </span>
-                                {isRegionalPrice && (
-                                  <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                                    ⭐
-                                  </span>
-                                )}
-                              </div>
-                              <span className="font-bold text-green-600 text-sm ml-2">
-                                R$ {service.totalPrice.toFixed(2)}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Seção de Pagamento */}
-                <div className="border-t border-gray-200 pt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    💳 Informações de Pagamento
-                  </label>
-
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      💰 Valor da Entrada Paga
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-gray-500 text-sm">R$</span>
-                      <input
-                        type="number"
-                        value={downPaymentAmount}
-                        onChange={(e) => setDownPaymentAmount(e.target.value)}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-                        placeholder="0,00"
-                        step="0.01"
-                        min="0"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Status do pagamento calculado */}
-                  <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                    <strong>📊 Status calculado:</strong>{' '}
-                    {(() => {
-                      const totalValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
-                      const downPayment = parseFloat(downPaymentAmount || '0')
-                      const pending = totalValue - downPayment
-
-                      if (totalValue === 0) return 'Pago (serviço gratuito)'
-                      if (downPayment >= totalValue) return 'Pago (integral)'
-                      if (downPayment > 0) return `Parcial (falta R$ ${pending.toFixed(2)})`
-                      return 'Pendente'
-                    })()}
-                  </div>
-                </div>
-
-                {/* Checkbox para confirmar agendamento */}
-                <div className="flex items-center space-x-2 py-2 border-t border-gray-200">
                   <input
-                    type="checkbox"
-                    id="isAppointmentConfirmed"
-                    checked={isAppointmentConfirmed}
-                    onChange={(e) => setIsAppointmentConfirmed(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    type="text"
+                    value={clientName}
+                    readOnly
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-900 font-medium"
                   />
-                  <label htmlFor="isAppointmentConfirmed" className="text-sm text-gray-700">
-                    <strong>Confirmar agendamento</strong> (requer endereço)
-                  </label>
                 </div>
-                
-                {isAppointmentConfirmed && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      📍 Endereço do Agendamento *
-                    </label>
-                    <textarea
-                      value={appointmentAddress}
-                      onChange={(e) => setAppointmentAddress(e.target.value)}
-                      className="w-full h-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-sm"
-                      placeholder="Digite o endereço completo do agendamento"
-                    />
-                  </div>
-                )}
-                
-                <div className={`p-3 rounded-lg text-sm ${isAppointmentConfirmed ? 'bg-blue-50 border border-blue-200' : 'bg-orange-50 border border-orange-200'}`}>
-                  <div className={`text-sm ${isAppointmentConfirmed ? 'text-blue-800' : 'text-orange-800'}`}>
-                    <strong>💄 Serviços:</strong><br />
+
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border border-purple-100">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <span className="mr-2">📱</span>
+                    Telefone
+                  </label>
+                  <input
+                    type="tel"
+                    value={clientPhone}
+                    readOnly
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-900 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Serviços do Agendamento */}
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-2xl border border-emerald-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="mr-2">💄</span>
+                  Serviços do Agendamento
+                </label>
+
+                {calculatedPrices.services.length > 0 ? (
+                  <div className="space-y-3 max-h-40 overflow-y-auto">
                     {calculatedPrices.services.map((service, index) => {
                       const serviceInfo = services.find(s => s.id === service.serviceId)
                       const regionalPrice = regionalPrices.find(
                         rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
                       )
+                      const isRegionalPrice = !!regionalPrice
+
                       return (
-                        <div key={index} className="ml-2">
-                          • {service.quantity}x {serviceInfo?.name} - R$ {service.totalPrice.toFixed(2)}
-                          {regionalPrice && <span className="text-blue-600"> ⭐</span>}
+                        <div key={index} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1 min-w-0">
+                              <span className="font-semibold text-gray-900 text-sm">
+                                {service.quantity}x {serviceInfo?.name}
+                              </span>
+                              {isRegionalPrice && (
+                                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                  ⭐ Regional
+                                </span>
+                              )}
+                            </div>
+                            <span className="font-bold text-green-600 text-sm ml-3">
+                              R$ {service.totalPrice.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       )
                     })}
-                    <br />
-                    <strong>� Local:</strong> {areas.find(a => a.id === selectedArea)?.name}<br />
-                    <strong>💰 Total geral:</strong> R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <div className="text-2xl mb-2">💄</div>
+                    <p className="text-sm">Nenhum serviço selecionado</p>
+                  </div>
+                )}
+
+                {/* Total dos Serviços */}
+                <div className="mt-4 pt-3 border-t border-emerald-200">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-700">💰 Total dos Serviços:</span>
+                    <span className="text-lg font-bold text-green-600">
+                      R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informações de Pagamento */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="mr-2">💳</span>
+                  Informações de Pagamento
+                </label>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    💰 Valor da Entrada Paga
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                    <input
+                      id="downPaymentAmount"
+                      type="number"
+                      value={downPaymentAmount}
+                      onChange={(e) => setDownPaymentAmount(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200 bg-white text-gray-900"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                {/* Status do pagamento calculado */}
+                <div className="bg-white p-3 rounded-xl border border-yellow-200">
+                  <div className="text-sm text-gray-700">
+                    <strong>📊 Status calculado:</strong>{' '}
+                    <span className="font-medium">
+                      {(() => {
+                        const totalValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                        const downPayment = parseFloat(downPaymentAmount || '0')
+                        const pending = totalValue - downPayment
+
+                        if (totalValue === 0) return 'Pago (serviço gratuito)'
+                        if (downPayment >= totalValue) return 'Pago (integral)'
+                        if (downPayment > 0) return `Parcial (falta R$ ${pending.toFixed(2)})`
+                        return 'Pagamento Pendente'
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Checkbox para confirmar agendamento */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="isAppointmentConfirmed"
+                    checked={isAppointmentConfirmed}
+                    onChange={(e) => setIsAppointmentConfirmed(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <div>
+                    <label htmlFor="isAppointmentConfirmed" className="text-sm font-semibold text-gray-700 cursor-pointer">
+                      ✅ Confirmar agendamento
+                    </label>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Requer endereço, data e horário para prosseguir
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Campos de endereço, data e hora - só aparecem se confirmado */}
+              {isAppointmentConfirmed && (
+                <>
+                  {/* Endereço */}
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-2xl border border-green-100">
+                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                      <span className="mr-2">📍</span>
+                      Endereço do Agendamento *
+                    </label>
+                    <textarea
+                      value={appointmentAddress}
+                      onChange={(e) => setAppointmentAddress(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white text-gray-900 resize-none"
+                      placeholder="Digite o endereço completo do agendamento"
+                    />
+                  </div>
+
+                  {/* Data e Horário */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-2xl border border-cyan-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <span className="mr-2">📅</span>
+                        Data *
+                      </label>
+                      <input
+                        type="date"
+                        value={appointmentDate}
+                        onChange={(e) => setAppointmentDate(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-200 bg-white text-gray-900"
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+
+                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-2xl border border-violet-100">
+                      <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <span className="mr-2">⏰</span>
+                        Horário *
+                      </label>
+                      <input
+                        type="time"
+                        value={appointmentTime}
+                        onChange={(e) => setAppointmentTime(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Resumo do Agendamento */}
+              <div className={`p-4 rounded-2xl border ${isAppointmentConfirmed ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                  <span className="mr-2">📋</span>
+                  Resumo do Agendamento
+                </h4>
+                <div className={`text-sm ${isAppointmentConfirmed ? 'text-blue-800' : 'text-orange-800'}`}>
+                  <div className="space-y-1">
+                    <div><strong>💄 Serviços:</strong> {calculatedPrices.services.length} selecionado(s)</div>
+                    <div><strong>📍 Local:</strong> {areas.find(a => a.id === selectedArea)?.name}</div>
+                    <div><strong>💰 Total:</strong> R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}</div>
                     {parseFloat(downPaymentAmount || '0') > 0 && (
                       <>
-                        <br />
-                        <strong>💳 Entrada paga:</strong> R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}
-                        <br />
-                        <strong>⏳ Pendente:</strong> R$ {(calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0) - parseFloat(downPaymentAmount || '0')).toFixed(2)}
+                        <div><strong>💳 Entrada:</strong> R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</div>
+                        <div><strong>⏳ Pendente:</strong> R$ {(calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0) - parseFloat(downPaymentAmount || '0')).toFixed(2)}</div>
                       </>
                     )}
-                    <br />
-                    <strong>📊 Status:</strong> {isAppointmentConfirmed ? 'Confirmado' : 'Pendente'}
+                    <div><strong>📊 Status:</strong> {isAppointmentConfirmed ? 'Agendamento Confirmado' : 'Aguardando Confirmação'}</div>
                     {isAppointmentConfirmed && appointmentAddress && (
                       <>
-                        <br />
-                        <strong>🏠 Endereço:</strong> {appointmentAddress}
+                        <div><strong>🏠 Endereço:</strong> {appointmentAddress}</div>
+                        <div><strong>📅 Data:</strong> {appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</div>
+                        <div><strong>⏰ Horário:</strong> {appointmentTime || 'Não definido'}</div>
                       </>
                     )}
                   </div>
                 </div>
               </div>
-              
-              <div className="flex space-x-3 mt-6">
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 rounded-b-3xl border-t border-gray-200">
+              <div className="flex space-x-3">
                 <button
                   onClick={() => {
                     setShowAppointmentModal(false)
                     setAppointmentAddress('')
+                    setAppointmentDate('')
+                    setAppointmentTime('')
                     setIsAppointmentConfirmed(false)
                     setDownPaymentAmount('0')
                     setPaymentStatus('pending')
                   }}
-                  className="flex-1 py-2 px-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors text-sm"
+                  className="flex-1 py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
                 >
-                  Cancelar
+                  ❌ Cancelar
                 </button>
                 <button
                   onClick={createAppointment}
-                  className={`flex-1 py-2 px-4 text-white rounded-lg font-medium transition-colors text-sm ${
-                    isAppointmentConfirmed 
-                      ? 'bg-blue-500 hover:bg-blue-600' 
-                      : 'bg-orange-500 hover:bg-orange-600'
+                  className={`flex-1 py-3 px-6 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg ${
+                    isAppointmentConfirmed
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'
                   }`}
                 >
-                  {isAppointmentConfirmed ? '✅ Confirmar' : '📝 Criar'} Agendamento
+                  {isAppointmentConfirmed ? '✅ Confirmar Agendamento' : '📝 Criar Agendamento'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Pagamento */}
+      {showPaymentConfirmationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[95vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white p-6 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">💰</span>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">
+                      Confirmar Pagamento
+                    </h2>
+                    <p className="text-green-100 text-sm">
+                      Entrada do agendamento
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPaymentConfirmationModal(false)}
+                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                >
+                  <span className="text-white text-lg">×</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5">
+              {/* Resumo do Agendamento */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
+                <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+                  <span className="mr-2">📋</span>
+                  Resumo do Agendamento
+                </h4>
+                <div className="text-sm text-blue-800 space-y-2">
+                  <div className="flex justify-between">
+                    <span><strong>👤 Cliente:</strong></span>
+                    <span>{clientName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>💰 Total:</strong></span>
+                    <span className="font-semibold">R$ {(() => {
+                      const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                      const area = areas.find(a => a.id === selectedArea)
+                      const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
+                        regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
+                      )
+                      const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+                      return (servicesTotal + travelFee).toFixed(2)
+                    })()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>💳 Entrada informada:</strong></span>
+                    <span className="font-semibold text-green-600">R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>📅 Data:</strong></span>
+                    <span>{appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span><strong>⏰ Horário:</strong></span>
+                    <span>{appointmentTime || 'Não definido'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Confirmação da Entrada */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-100">
+                <h4 className="font-semibold text-yellow-800 mb-3 flex items-center">
+                  <span className="mr-2">💰</span>
+                  Confirmação da Entrada
+                </h4>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-yellow-800 mb-2">
+                    R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}
+                  </div>
+                  <p className="text-sm text-yellow-700">
+                    Este valor da entrada realmente foi pago pelo cliente?
+                  </p>
+                </div>
+              </div>
+
+              {/* Aviso Importante */}
+              <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-2xl border border-red-100">
+                <div className="flex items-start space-x-3">
+                  <span className="text-red-500 text-xl">⚠️</span>
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-2">Importante</h4>
+                    <p className="text-sm text-red-700">
+                      Ao confirmar, o agendamento será marcado como "Confirmado" e não poderá ser alterado. Certifique-se de que o pagamento foi realmente recebido.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 rounded-b-3xl border-t border-gray-200">
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowPaymentConfirmationModal(false)
+                    // Focar no campo de entrada após um pequeno delay
+                    setTimeout(() => {
+                      const input = document.getElementById('downPaymentAmount') as HTMLInputElement
+                      if (input) {
+                        input.focus()
+                        input.select()
+                      }
+                    }, 100)
+                  }}
+                  className="flex-1 py-3 px-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  ✏️ Ajustar Valor
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPaymentConfirmationModal(false)
+                    createAppointmentConfirmed()
+                  }}
+                  className="flex-1 py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  ✅ Sim, foi pago
                 </button>
               </div>
             </div>

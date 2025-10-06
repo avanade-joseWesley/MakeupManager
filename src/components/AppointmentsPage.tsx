@@ -359,7 +359,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-2 sm:py-4">
-      <Container className="space-y-3 sm:space-y-4 px-2 sm:px-4">
+      <Container className="space-y-3 sm:space-y-4">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-3 sm:p-4 rounded-2xl shadow-xl">
           <div className="flex items-center justify-between">
@@ -469,7 +469,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
               return (
                 <div key={appointment.id} className={`${getCardStyle(appointment.status, appointment.payment_status)} rounded-xl shadow-lg overflow-hidden`}>
                   {/* Card Principal - Sempre Visível */}
-                  <div className="p-2">
+                  <div className="p-3 sm:p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-2">
@@ -575,7 +575,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
 
                   {/* Detalhes Expandidos */}
                   {isExpanded && (
-                    <div className="px-2 pb-2 border-t border-gray-100 bg-gray-50">
+                    <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-100 bg-gray-50">
                       {/* Valor Total */}
                       <div className="mb-2">
                         <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide">💰 Valor Total:</div>

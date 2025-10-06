@@ -65,7 +65,7 @@ export default function Clients({ user }: { user?: any }) {
     setLoading(true)
     setError(null)
     try {
-  let query = supabase.from('clients').select('*').order('created_at', { ascending: false })
+      let query = supabase.from('clients').select('*').order('created_at', { ascending: false })
       if (user && user.id) {
         query = query.eq('user_id', user.id)
       }
@@ -177,25 +177,50 @@ export default function Clients({ user }: { user?: any }) {
 
   return (
     <div className="space-y-4">
+      {/* Estatísticas Rápidas */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200 shadow-sm">
+          <div className="text-center">
+            <div className="text-lg mb-1">👥</div>
+            <div className="text-xs text-gray-600 font-medium">Total</div>
+            <div className="text-lg font-bold text-blue-600">
+              {filtered.length}
+            </div>
+            <div className="text-xs text-gray-500">clientes</div>
+          </div>
+        </div>
+        
+        <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200 shadow-sm">
+          <div className="text-center">
+            <div className="text-lg mb-1">📷</div>
+            <div className="text-xs text-gray-600 font-medium">Com Instagram</div>
+            <div className="text-lg font-bold text-green-600">
+              {filtered.filter(c => c.instagram).length}
+            </div>
+            <div className="text-xs text-gray-500">perfis</div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-2">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center">📋 Lista de Clientes</h2>
             <button 
               onClick={() => setShowForm(s => !s)} 
-              className="px-3 py-1 bg-white/20 text-white rounded-lg text-sm hover:bg-white/30 transition-colors"
+              className="px-3 py-1 bg-white/20 text-white rounded-lg text-sm hover:bg-white/30 transition-colors flex items-center gap-1"
             >
-              {showForm ? 'Fechar' : '➕ Adicionar'}
+              <span>{showForm ? '✕' : '➕'}</span>
+              <span className="hidden sm:inline">{showForm ? 'Fechar' : 'Adicionar'}</span>
             </button>
           </div>
           <div className="text-blue-100 text-sm mt-1">{filtered.length} clientes cadastrados</div>
         </div>
         
-        <div className="p-2 sm:p-4">
-
+        <div className="p-4">
           {/* Formulário */}
           <div className={`overflow-hidden transition-all duration-300 ${showForm ? 'max-h-[800px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-2 sm:p-4 rounded-lg space-y-3 mb-4">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg space-y-4 mb-4">
               <div className="text-center mb-3">
                 <h3 className="font-semibold text-gray-800">{editing ? '✏️ Editar Cliente' : '➕ Novo Cliente'}</h3>
               </div>
@@ -205,7 +230,7 @@ export default function Clients({ user }: { user?: any }) {
                   ref={nameRef} 
                   aria-label="Nome" 
                   type="text" 
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
                   placeholder="Nome completo*" 
                   value={name} 
                   onChange={e => setName(e.target.value)} 
@@ -213,7 +238,7 @@ export default function Clients({ user }: { user?: any }) {
                 <input 
                   aria-label="Telefone" 
                   type="tel" 
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
                   placeholder="Telefone*" 
                   value={phone} 
                   onChange={e => setPhone(e.target.value)} 
@@ -221,7 +246,7 @@ export default function Clients({ user }: { user?: any }) {
                 <input 
                   aria-label="Email" 
                   type="email" 
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
                   placeholder="Email (opcional)" 
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
@@ -229,7 +254,7 @@ export default function Clients({ user }: { user?: any }) {
                 <input 
                   aria-label="Endereço" 
                   type="text" 
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
                   placeholder="Endereço (opcional)" 
                   value={address} 
                   onChange={e => setAddress(e.target.value)} 
@@ -238,13 +263,13 @@ export default function Clients({ user }: { user?: any }) {
                 <input 
                   aria-label="Instagram" 
                   type="text" 
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" 
                   placeholder="Instagram (opcional)" 
                   value={instagram} 
                   onChange={e => setInstagram(e.target.value)} 
                 />
                 <textarea 
-                  className="w-full px-3 py-2 sm:px-4 sm:py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base resize-none" 
+                  className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors resize-none" 
                   placeholder="Notas adicionais (opcional)" 
                   rows={3}
                   value={notes} 
@@ -256,13 +281,13 @@ export default function Clients({ user }: { user?: any }) {
                 <button 
                   onClick={save} 
                   disabled={!name.trim() || !phone.trim()} 
-                  className="flex-1 py-2 px-3 sm:py-3 sm:px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg disabled:opacity-50 font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors text-sm sm:text-base"
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg disabled:opacity-50 font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors"
                 >
                   {editing ? '💾 Salvar' : '➕ Adicionar'}
                 </button>
                 <button 
                   onClick={() => { resetForm(); setShowForm(false); }} 
-                  className="px-3 py-2 sm:px-4 sm:py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
+                  className="px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -276,12 +301,12 @@ export default function Clients({ user }: { user?: any }) {
               <input 
                 aria-label="Buscar" 
                 type="text" 
-                className="w-full px-3 py-2 pl-9 sm:px-4 sm:py-3 sm:pl-10 border-2 border-gray-200 rounded-lg bg-gray-50 focus:border-blue-500 focus:outline-none transition-colors text-sm sm:text-base" 
+                className="w-full px-4 py-3 pl-10 border-2 border-gray-200 rounded-lg bg-gray-50 focus:border-blue-500 focus:outline-none transition-colors" 
                 placeholder="Buscar clientes..." 
                 value={query} 
                 onChange={e => setQuery(e.target.value)} 
               />
-              <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm sm:text-base sm:left-3">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                 🔍
               </div>
             </div>
@@ -306,28 +331,28 @@ export default function Clients({ user }: { user?: any }) {
             <div className="space-y-3">
               {filtered.map(c => (
                 <div key={c.id} className="bg-gradient-to-r from-white to-blue-50 border border-blue-100 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-2 sm:p-3">
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg flex-shrink-0 text-sm sm:text-base">
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold shadow-lg flex-shrink-0">
                         {(c.name || ' ')[0].toUpperCase()}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="font-semibold text-gray-800 truncate text-sm sm:text-base">{c.name}</div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-semibold text-gray-800 truncate text-base">{c.name}</div>
                           <button 
                             onClick={() => toggleExpanded(c.id)} 
-                            className={`ml-auto flex-shrink-0 p-1 rounded-full hover:bg-blue-100 transition-all duration-200 ${expandedMap[c.id] ? 'rotate-180 bg-blue-100' : 'rotate-0'}`}
+                            className={`flex-shrink-0 p-1 rounded-full hover:bg-blue-100 transition-all duration-200 ${expandedMap[c.id] ? 'rotate-180 bg-blue-100' : 'rotate-0'}`}
                           >
-                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                           </button>
                         </div>
                         
-                        <div className="flex flex-col gap-1">
+                        <div className="space-y-1">
                           <a 
-                            className="text-green-600 hover:text-green-700 font-medium text-xs sm:text-sm break-all" 
+                            className="text-green-600 hover:text-green-700 font-medium text-sm block break-all" 
                             href={`https://wa.me/55${String(c.phone).replace(/\D/g, '')}`} 
                             target="_blank" 
                             rel="noreferrer"
@@ -336,7 +361,7 @@ export default function Clients({ user }: { user?: any }) {
                           </a>
                           {c.instagram && (
                             <a 
-                              className="text-pink-600 text-xs sm:text-sm hover:text-pink-700 font-medium break-all" 
+                              className="text-pink-600 text-sm hover:text-pink-700 font-medium block break-all" 
                               target="_blank" 
                               rel="noreferrer" 
                               href={`https://instagram.com/${String(c.instagram).replace(/^@/, '')}`}
@@ -373,13 +398,13 @@ export default function Clients({ user }: { user?: any }) {
                         <div className="flex gap-2 pt-2">
                           <button 
                             onClick={() => startEdit(c)} 
-                            className="px-2 py-1 sm:px-3 sm:py-1 bg-yellow-100 text-yellow-800 rounded-lg text-xs sm:text-sm font-medium hover:bg-yellow-200 transition-colors"
+                            className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-medium hover:bg-yellow-200 transition-colors"
                           >
                             ✏️ Editar
                           </button>
                           <button 
                             onClick={() => remove(c.id)} 
-                            className="px-2 py-1 sm:px-3 sm:py-1 bg-red-100 text-red-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-red-200 transition-colors"
+                            className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
                           >
                             🗑️ Excluir
                           </button>

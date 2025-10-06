@@ -496,13 +496,13 @@ export function Settings({ user, onBack }: SettingsProps) {
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
               <h2 className="text-lg font-semibold text-gray-800 mb-6">
                 👤 Informações Pessoais
               </h2>
               
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {/* Grid para campos principais */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -628,7 +628,7 @@ export function Settings({ user, onBack }: SettingsProps) {
         {activeTab === 'areas' && (
           <div className="space-y-4">
             {/* Add New Area */}
-            <div className="bg-white p-6 rounded-2xl shadow-xl">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 📍 Adicionar Nova Região
               </h2>
@@ -683,7 +683,7 @@ export function Settings({ user, onBack }: SettingsProps) {
             </div>
 
             {/* Existing Areas */}
-            <div className="bg-white p-6 rounded-2xl shadow-xl">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 📋 Regiões Cadastradas
               </h2>
@@ -723,7 +723,7 @@ export function Settings({ user, onBack }: SettingsProps) {
         {activeTab === 'services' && (
           <div className="space-y-4">
             {/* Add New Category */}
-            <div className="bg-white p-6 rounded-2xl shadow-xl">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 📂 Adicionar Categoria
               </h2>
@@ -757,7 +757,7 @@ export function Settings({ user, onBack }: SettingsProps) {
 
             {/* Add New Service */}
             {categories.length > 0 && (
-              <div className="bg-white p-6 rounded-2xl shadow-xl">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">
                   💄 Adicionar Serviço
                 </h2>
@@ -847,7 +847,7 @@ export function Settings({ user, onBack }: SettingsProps) {
             )}
 
             {/* Categories and Services List */}
-            <div className="bg-white p-6 rounded-2xl shadow-xl">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 📋 Serviços Cadastrados
               </h2>
@@ -902,7 +902,7 @@ export function Settings({ user, onBack }: SettingsProps) {
           <div className="space-y-4">
             {/* Add New Regional Price */}
             {getAllServices().length > 0 && serviceAreas.length > 0 && (
-              <div className="bg-white p-6 rounded-2xl shadow-xl">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">
                   💰 Preço Regional (Substitui o Preço Padrão)
                 </h2>
@@ -998,7 +998,7 @@ export function Settings({ user, onBack }: SettingsProps) {
             )}
 
             {/* Existing Regional Prices */}
-            <div className="bg-white p-6 rounded-2xl shadow-xl">
+            <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-xl">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
                 📋 Preços por Região
               </h2>

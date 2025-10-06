@@ -577,9 +577,9 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                   {isExpanded && (
                     <div className="px-3 sm:px-4 pb-3 sm:pb-4 border-t border-gray-100 bg-gray-50">
                       {/* Valor Total */}
-                      <div className="mb-2">
+                      <div className="mb-3">
                         <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide">💰 Valor Total:</div>
-                        <div className="bg-white px-2 py-1 rounded border border-gray-200">
+                        <div className="bg-white px-3 py-2 rounded border border-gray-200">
                           <div className="text-sm font-semibold text-green-600">
                             R$ {appointment.payment_total_service.toFixed(2)}
                           </div>
@@ -587,11 +587,11 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                       </div>
 
                       {/* Serviços */}
-                      <div className="mb-2">
+                      <div className="mb-3">
                         <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide">💄 Serviços:</div>
                         <div className="space-y-2">
                           {appointment.appointment_services?.map((service, index) => (
-                            <div key={index} className="bg-white px-2 py-1 rounded border border-gray-200">
+                            <div key={index} className="bg-white px-3 py-2 rounded border border-gray-200">
                               <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-900">
                                   {service.quantity}x {service.service?.name}
@@ -602,7 +602,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                               </div>
                             </div>
                           )) || (
-                            <div className="text-sm text-gray-500 italic bg-white px-2 py-1 rounded border border-gray-200">
+                            <div className="text-sm text-gray-500 italic bg-white px-3 py-2 rounded border border-gray-200">
                               Nenhum serviço informado
                             </div>
                           )}
@@ -610,9 +610,9 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                       </div>
 
                       {/* Local */}
-                      <div className="mb-2">
+                      <div className="mb-3">
                         <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide">📍 Local:</div>
-                        <div className="bg-white px-2 py-1 rounded border border-gray-200">
+                        <div className="bg-white px-3 py-2 rounded border border-gray-200">
                           <div className="text-sm text-gray-900">
                             {appointment.service_area?.name || 'Local não definido'}
                           </div>
@@ -621,9 +621,9 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
 
                       {/* Observações */}
                       {appointment.notes && (
-                        <div className="mb-2">
+                        <div className="mb-3">
                           <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide">📝 Observações:</div>
-                          <div className="bg-yellow-50 px-2 py-1 rounded border border-yellow-200">
+                          <div className="bg-yellow-50 px-3 py-2 rounded border border-yellow-200">
                             <div className="text-sm text-gray-900">
                               {appointment.notes}
                             </div>
@@ -632,7 +632,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                       )}
 
                       {/* Informações Adicionais */}
-                      <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">
+                      <div className="text-xs text-gray-500 bg-white px-3 py-2 rounded border border-gray-200">
                         Criado em {new Date(appointment.created_at).toLocaleDateString('pt-BR')} às {new Date(appointment.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>

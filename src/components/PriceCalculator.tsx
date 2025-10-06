@@ -54,6 +54,9 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   const [downPaymentAmount, setDownPaymentAmount] = useState('0')
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'partial'>('pending')
 
+  // Controle de criação de agendamento
+  const [isCreatingAppointment, setIsCreatingAppointment] = useState(false)
+  
   // Modal de confirmação de pagamento
   const [showPaymentConfirmationModal, setShowPaymentConfirmationModal] = useState(false)
   
@@ -224,6 +227,20 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
   // Usar os valores calculados diretamente, sem atualizar o estado
 
+  const clearFields = () => {
+    setClientName('')
+    setClientPhone('')
+    setSelectedArea('')
+    setAppointmentServices([])
+    setIncludeTravelFee(false)
+    setAppointmentAddress('')
+    setAppointmentDate('')
+    setAppointmentTime('')
+    setIsAppointmentConfirmed(false)
+    setDownPaymentAmount('0')
+    setPaymentStatus('pending')
+  }
+
   const sendWhatsAppBudget = () => {
     if (!clientName || !clientPhone || calculatedPrices.services.length === 0 || !selectedArea) {
       alert('Por favor, preencha todos os campos obrigatórios e selecione pelo menos um serviço!')
@@ -284,11 +301,92 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     setShowWhatsAppModal(true)
   }
 
-  const confirmSendWhatsApp = () => {
-    const encodedMessage = encodeURIComponent(whatsappMessage)
-    const whatsappUrl = `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=${encodedMessage}`
-    window.open(whatsappUrl, '_blank')
-    setShowWhatsAppModal(false)
+  const confirmSendWhatsApp = async () => {
+    try {
+      // 1. Criar agendamento não confirmado automaticamente
+      if (!user || !user.id) {
+        alert('Erro: Usuário não autenticado')
+        return
+      }
+
+      // Verificar se o cliente existe, se não existir, criar
+      let clientId = knownClients.find(c => c.name === clientName)?.id
+
+      if (!clientId) {
+        // Criar novo cliente
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert({
+            user_id: user.id,
+            name: clientName,
+            phone: clientPhone,
+            address: null
+          })
+          .select('id')
+          .single()
+
+        if (clientError) throw clientError
+        clientId = newClient.id
+      }
+
+      // Calcular valores
+      const totalServiceValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+
+      // Criar agendamento não confirmado
+      const { data: appointment, error: appointmentError } = await supabase
+        .from('appointments')
+        .insert({
+          user_id: user.id,
+          client_id: clientId,
+          service_area_id: selectedArea,
+          scheduled_date: null,
+          scheduled_time: null,
+          status: 'pending',
+          appointment_address: null,
+          total_received: 0,
+          payment_down_payment_paid: 0,
+          payment_total_service: totalServiceValue,
+          payment_status: 'pending',
+          notes: `Orçamento enviado via WhatsApp - ${calculatedPrices.services.length} serviço(s)`
+        })
+        .select('id')
+        .single()
+
+      if (appointmentError) throw appointmentError
+
+      // Inserir os serviços do agendamento
+      const appointmentServicesData = calculatedPrices.services.map(service => ({
+        appointment_id: appointment.id,
+        service_id: service.serviceId,
+        quantity: service.quantity,
+        unit_price: service.unitPrice,
+        total_price: service.totalPrice
+      }))
+
+      const { error: servicesError } = await supabase
+        .from('appointment_services')
+        .insert(appointmentServicesData)
+
+      if (servicesError) throw servicesError
+
+      // 2. Enviar mensagem pelo WhatsApp
+      const encodedMessage = encodeURIComponent(whatsappMessage)
+      const whatsappUrl = `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=${encodedMessage}`
+      window.open(whatsappUrl, '_blank')
+
+      // 3. Limpar campos e fechar modal
+      clearFields()
+      setShowWhatsAppModal(false)
+
+      // 4. Recarregar lista de clientes para incluir o novo (se foi criado)
+      loadData()
+
+      alert('✅ Orçamento enviado e agendamento criado com sucesso!')
+
+    } catch (error: any) {
+      console.error('Erro ao enviar orçamento:', error)
+      alert(`Erro ao enviar orçamento: ${error.message}`)
+    }
   }
 
   const addServiceToAppointment = (serviceId: string, quantity: number) => {
@@ -356,6 +454,11 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   }
 
   const createAppointmentConfirmed = async () => {
+    // Evitar múltiplas execuções simultâneas
+    if (isCreatingAppointment) return
+
+    setIsCreatingAppointment(true)
+
     try {
       // 1. Verificar se o cliente existe, se não existir, criar
       let clientId = knownClients.find(c => c.name === clientName)?.id
@@ -377,7 +480,55 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         clientId = newClient.id
       }
 
-      // 2. Calcular valores de pagamento
+      // 2. Verificar se já existe um agendamento duplicado
+      const duplicateCheckQuery = supabase
+        .from('appointments')
+        .select(`
+          id,
+          appointment_services (
+            service_id,
+            quantity
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('client_id', clientId)
+        .eq('service_area_id', selectedArea)
+
+      // Para agendamentos confirmados, verificar data e horário
+      if (isAppointmentConfirmed) {
+        duplicateCheckQuery
+          .eq('scheduled_date', appointmentDate)
+          .eq('scheduled_time', appointmentTime)
+      }
+
+      const { data: existingAppointments, error: checkError } = await duplicateCheckQuery
+
+      if (checkError) throw checkError
+
+      // Verificar se algum agendamento existente tem os mesmos serviços
+      if (existingAppointments && existingAppointments.length > 0) {
+        for (const existingAppointment of existingAppointments) {
+          const existingServices = existingAppointment.appointment_services || []
+          
+          // Verificar se tem a mesma quantidade de serviços
+          if (existingServices.length === calculatedPrices.services.length) {
+            // Verificar se todos os serviços são iguais (mesmo ID e quantidade)
+            const servicesMatch = calculatedPrices.services.every(newService => {
+              return existingServices.some(existingService => 
+                existingService.service_id === newService.serviceId && 
+                existingService.quantity === newService.quantity
+              )
+            })
+
+            if (servicesMatch) {
+              alert('⚠️ Agendamento duplicado detectado!\n\nJá existe um agendamento idêntico para este cliente com os mesmos serviços, data e horário.')
+              return
+            }
+          }
+        }
+      }
+
+      // 3. Calcular valores de pagamento
       const totalServiceValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
       const downPaymentPaid = parseFloat(downPaymentAmount || '0')
 
@@ -395,7 +546,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         }
       }
 
-      // 3. Criar o agendamento
+      // 4. Criar o agendamento
       const { data: appointment, error: appointmentError } = await supabase
         .from('appointments')
         .insert({
@@ -420,7 +571,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
       if (appointmentError) throw appointmentError
 
-      // 4. Inserir os serviços do agendamento
+      // 5. Inserir os serviços do agendamento
       const appointmentServicesData = calculatedPrices.services.map(service => ({
         appointment_id: appointment.id,
         service_id: service.serviceId,
@@ -435,7 +586,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
       if (servicesError) throw servicesError
 
-      // 5. Sucesso - fechar modal e limpar dados
+      // 6. Sucesso - fechar modal e limpar dados
       alert(`✅ Agendamento ${isAppointmentConfirmed ? 'confirmado' : 'criado'} com sucesso!`)
       
       setShowAppointmentModal(false)
@@ -446,12 +597,17 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       setDownPaymentAmount('0')
       setPaymentStatus('pending')
 
+      // Limpar todos os campos
+      clearFields()
+
       // Recarregar lista de clientes para incluir o novo (se foi criado)
       loadData()
 
     } catch (error: any) {
       console.error('Erro ao criar agendamento:', error)
       alert(`Erro ao criar agendamento: ${error.message}`)
+    } finally {
+      setIsCreatingAppointment(false)
     }
   }
 
@@ -1186,13 +1342,21 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 </button>
                 <button
                   onClick={createAppointment}
+                  disabled={isCreatingAppointment}
                   className={`flex-1 py-2 sm:py-3 px-3 sm:px-6 text-white rounded-lg sm:rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-xs sm:text-sm ${
                     isAppointmentConfirmed
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-                      : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                      : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
                   }`}
                 >
-                  {isAppointmentConfirmed ? '✅ Confirmar Agendamento' : '📝 Criar Agendamento'}
+                  {isCreatingAppointment ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Criando...</span>
+                    </div>
+                  ) : (
+                    isAppointmentConfirmed ? '✅ Confirmar Agendamento' : '📝 Criar Agendamento'
+                  )}
                 </button>
               </div>
             </div>

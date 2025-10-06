@@ -56,7 +56,7 @@ export function WhatsAppButton({ phoneNumber = '', message, className = '', chil
             value={customNumber}
             onChange={(e) => setCustomNumber(e.target.value)}
             placeholder="11999999999 ou (11) 99999-9999"
-            className="w-full px-4 py-3 text-base text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-gray-50 focus:bg-white placeholder-gray-500"
+            className="w-full px-3 py-2 text-base text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-gray-50 focus:bg-white placeholder-gray-500"
           />
           <p className="text-xs text-gray-500 mt-1">
             Pode incluir DDD: (11) 99999-9999 ou 11999999999
@@ -74,7 +74,7 @@ export function WhatsAppButton({ phoneNumber = '', message, className = '', chil
         {/* Botão enviar */}
         <button
           onClick={handleWhatsAppClick}
-          className="w-full inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-3 rounded-lg transition-colors duration-200"
+          className="w-full inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-2 rounded-lg transition-colors duration-200"
         >
           <svg 
             className="w-5 h-5 mr-2" 

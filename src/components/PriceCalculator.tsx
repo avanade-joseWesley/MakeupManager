@@ -456,14 +456,14 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   }
 
   return (
-    <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-xl">
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">
+    <div className="bg-white p-2 sm:p-3 rounded-2xl shadow-xl">
+      <h2 className="text-lg font-semibold text-gray-800 mb-2">
         🧮 Calculadora de Preços
       </h2>
       
-      <div className="space-y-3">
+      <div className="space-y-2">
         {/* Dados do Cliente */}
-        <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
+        <div className="space-y-3 p-3 bg-blue-50 rounded-lg">
           <div>
             <label className="block text-sm font-medium text-blue-800 mb-2">
               👤 Nome do Cliente *
@@ -473,7 +473,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               type="text"
               value={clientName}
               onChange={(e) => handleClientNameChange(e.target.value)}
-              className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Nome completo do cliente"
             />
             <datalist id="clients-list">
@@ -490,7 +490,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               type="tel"
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value)}
-              className="w-full px-4 py-3 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="11987654321"
             />
           </div>
@@ -504,7 +504,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           <select
             value={selectedArea}
             onChange={(e) => setSelectedArea(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
           >
             <option value="">Selecione uma região</option>
             {areas.map((area) => (
@@ -881,7 +881,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 <textarea
                   value={whatsappMessage}
                   onChange={(e) => setWhatsappMessage(e.target.value)}
-                  className="w-full h-64 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  className="w-full h-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                   placeholder="Mensagem do WhatsApp"
                 />
               </div>

@@ -305,10 +305,10 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-4">
-      <Container className="space-y-4">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-2">
+      <Container className="space-y-3">
         {/* Header */}
-        <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4 rounded-2xl shadow-xl mb-4">
+        <div className="bg-gradient-to-r from-pink-500 to-purple-600 text-white p-3 rounded-2xl shadow-xl mb-3">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold">
@@ -328,31 +328,31 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-2 mb-3">
           <button
             onClick={() => setCurrentView('calculator')}
-            className="bg-gradient-to-br from-green-400 to-green-600 text-white p-4 rounded-xl shadow-lg active:scale-95 transition-transform"
+            className="bg-gradient-to-br from-green-400 to-green-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
             <div className="text-2xl mb-1">🧮</div>
             <div className="text-xs font-semibold">Calculadora</div>
           </button>
           <button
             onClick={() => setCurrentView('clients')}
-            className="bg-gradient-to-br from-blue-400 to-blue-600 text-white p-4 rounded-xl shadow-lg active:scale-95 transition-transform"
+            className="bg-gradient-to-br from-blue-400 to-blue-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
             <div className="text-2xl mb-1">👥</div>
             <div className="text-xs font-semibold">Clientes</div>
           </button>
           <button
             onClick={() => setCurrentView('appointments')}
-            className="bg-gradient-to-br from-orange-400 to-red-500 text-white p-4 rounded-xl shadow-lg active:scale-95 transition-transform"
+            className="bg-gradient-to-br from-orange-400 to-red-500 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
             <div className="text-2xl mb-1">📅</div>
             <div className="text-xs font-semibold">Agendamentos</div>
           </button>
           <button
             onClick={() => setCurrentView('settings')}
-            className="bg-gradient-to-br from-purple-400 to-purple-600 text-white p-4 rounded-xl shadow-lg active:scale-95 transition-transform"
+            className="bg-gradient-to-br from-purple-400 to-purple-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
             <div className="text-2xl mb-1">⚙️</div>
             <div className="text-xs font-semibold">Config</div>
@@ -360,8 +360,8 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
         </div>
 
         {/* Cards de Status */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-white p-4 rounded-xl shadow-lg border-l-4 border-pink-500">
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="bg-white p-3 rounded-xl shadow-lg border-l-4 border-pink-500">
             <div className="text-center">
               <div className="text-sm text-gray-600 font-medium">Hoje</div>
               <div className="text-xl font-bold text-pink-600">
@@ -371,10 +371,10 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
             </div>
           </div>
           
-          <div className="bg-white p-4 rounded-xl shadow-lg border-l-4 border-green-500">
+          <div className="bg-white p-3 rounded-xl shadow-lg border-l-4 border-green-500">
             <div className="text-center">
               <div className="text-sm text-gray-600 font-medium">Receita</div>
-              <div className="text-lg font-bold text-green-600">
+              <div className="text-base font-bold text-green-600">
                 {loading ? '...' : `R$ ${dashboardData.todayRevenue.toFixed(2)}`}
               </div>
               <div className="text-xs text-gray-500">prevista hoje</div>
@@ -383,20 +383,20 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
         </div>
 
         {/* Status Cards Adicionais */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          <div className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-3 rounded-lg text-center">
+        <div className="grid grid-cols-3 gap-1 mb-4">
+          <div className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-2 rounded-lg text-center">
             <div className="text-lg font-bold">
               {loading ? '...' : dashboardData.pendingAppointments}
             </div>
             <div className="text-xs opacity-90">Aguardando Confirmação</div>
           </div>
-          <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-3 rounded-lg text-center">
+          <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-2 rounded-lg text-center">
             <div className="text-lg font-bold">
               {loading ? '...' : dashboardData.confirmedAppointments}
             </div>
             <div className="text-xs opacity-90">Confirmados</div>
           </div>
-          <div className="bg-gradient-to-br from-purple-400 to-pink-500 text-white p-3 rounded-lg text-center">
+          <div className="bg-gradient-to-br from-purple-400 to-pink-500 text-white p-2 rounded-lg text-center">
             <div className="text-lg font-bold text-sm">
               {loading ? '...' : `R$ ${dashboardData.monthlyRevenue.toFixed(0)}`}
             </div>
@@ -420,7 +420,7 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="11987654321"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
               />
             </div>
 
@@ -433,7 +433,7 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Digite sua mensagem..."
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
               />
             </div>
 

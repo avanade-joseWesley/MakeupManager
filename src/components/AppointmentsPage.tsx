@@ -5,6 +5,8 @@ import { Container } from './Container'
 interface AppointmentsPageProps {
   user: any
   onBack: () => void
+  initialFilter?: 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'overdue'
+  initialPaymentFilter?: 'all' | 'pending' | 'paid' | 'partial'
 }
 
 interface Appointment {
@@ -24,12 +26,12 @@ interface Appointment {
   appointment_services: any[] // Simplificar para any por enquanto
 }
 
-export default function AppointmentsPage({ user, onBack }: AppointmentsPageProps) {
+export default function AppointmentsPage({ user, onBack, initialFilter = 'all', initialPaymentFilter = 'all' }: AppointmentsPageProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled'>('all')
-  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'paid' | 'partial'>('all')
+  const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'overdue'>(initialFilter)
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'paid' | 'partial'>(initialPaymentFilter)
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
@@ -45,6 +47,18 @@ export default function AppointmentsPage({ user, onBack }: AppointmentsPageProps
   useEffect(() => {
     loadAppointments()
   }, [user])
+
+  // Função helper para verificar se agendamento está atrasado
+  const isAppointmentOverdue = (appointment: any) => {
+    if (!appointment.scheduled_date) return false
+    
+    const appointmentDate = new Date(appointment.scheduled_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Zera horas para comparar apenas datas
+    
+    // Se a data já passou e o status ainda é confirmado ou pendente
+    return appointmentDate < today && (appointment.status === 'confirmed' || appointment.status === 'pending')
+  }
 
   const loadAppointments = async () => {
     if (!user || !user.id) return
@@ -91,8 +105,15 @@ export default function AppointmentsPage({ user, onBack }: AppointmentsPageProps
   }
 
   const filteredAppointments = appointments.filter(appointment => {
-    // Filtro por status
-    if (filter !== 'all' && appointment.status !== filter) return false
+    // Filtro especial para agendamentos atrasados
+    if (filter === 'overdue') {
+      // Apenas agendamentos confirmados que já passaram da data
+      if (appointment.status !== 'confirmed') return false
+      if (!isAppointmentOverdue(appointment)) return false
+    } else {
+      // Filtro normal por status
+      if (filter !== 'all' && appointment.status !== filter) return false
+    }
 
     // Filtro por status de pagamento
     if (paymentFilter !== 'all' && appointment.payment_status !== paymentFilter) return false
@@ -140,18 +161,6 @@ export default function AppointmentsPage({ user, onBack }: AppointmentsPageProps
   const formatTime = (timeString: string | null) => {
     if (!timeString) return ''
     return timeString
-  }
-
-  // Função helper para verificar se agendamento está atrasado
-  const isAppointmentOverdue = (appointment: any) => {
-    if (!appointment.scheduled_date) return false
-    
-    const appointmentDate = new Date(appointment.scheduled_date)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // Zera horas para comparar apenas datas
-    
-    // Se a data já passou e o status ainda é confirmado ou pendente
-    return appointmentDate < today && (appointment.status === 'confirmed' || appointment.status === 'pending')
   }
 
   const toggleCardExpansion = (appointmentId: string) => {
@@ -408,6 +417,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                 <option value="all">Todos</option>
                 <option value="pending">Aguardando Confirmação</option>
                 <option value="confirmed">Confirmado</option>
+                <option value="overdue">Atrasados</option>
                 <option value="completed">Realizado</option>
                 <option value="cancelled">Cancelado</option>
               </select>

@@ -17,6 +17,12 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   const [message, setMessage] = useState('')
   const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments'>('dashboard')
   
+  // Estado para filtros de agendamento
+  const [appointmentFilters, setAppointmentFilters] = useState<{
+    status: 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'overdue' | null
+    paymentStatus: 'all' | 'pending' | 'paid' | 'partial' | null
+  }>({ status: null, paymentStatus: null })
+  
   // Estados para dados reais do dashboard
   const [dashboardData, setDashboardData] = useState({
     todayAppointments: 0,
@@ -25,9 +31,23 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     confirmedAppointments: 0,
     completedAppointments: 0,
     monthlyRevenue: 0,
+    pendingPayments: 0,
+    overdueAppointments: 0,
     upcomingAppointments: [] as any[]
   })
   const [loading, setLoading] = useState(true)
+
+  // Função helper para verificar se agendamento está atrasado
+  const isAppointmentOverdue = (appointment: any) => {
+    if (!appointment.scheduled_date) return false
+    
+    const appointmentDate = new Date(appointment.scheduled_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Zera horas para comparar apenas datas
+    
+    // Se a data já passou e o status ainda é confirmado ou pendente
+    return appointmentDate < today && (appointment.status === 'confirmed' || appointment.status === 'pending')
+  }
 
   // Buscar dados reais do dashboard
   const fetchDashboardData = async () => {
@@ -112,16 +132,25 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
 
       if (confirmedError) throw confirmedError
 
-      // Buscar agendamentos realizados do mês
-      const { data: completedAppointments, error: completedError } = await supabase
+      // Buscar agendamentos com pagamentos pendentes (apenas confirmados)
+      const { data: pendingPaymentsData, error: pendingPaymentsError } = await supabase
         .from('appointments')
         .select('id')
         .eq('user_id', user.id)
-        .eq('status', 'completed')
-        .gte('created_at', startOfMonth.toISOString())
-        .lte('created_at', endOfMonth.toISOString())
+        .eq('status', 'confirmed')
+        .or('payment_status.eq.pending,payment_status.eq.partial')
 
-      if (completedError) throw completedError
+      if (pendingPaymentsError) throw pendingPaymentsError
+
+      // Buscar agendamentos atrasados (que já passaram da data e ainda não foram marcados como completed)
+      const { data: overdueAppointmentsData, error: overdueError } = await supabase
+        .from('appointments')
+        .select('id, scheduled_date, status')
+        .eq('user_id', user.id)
+        .lt('scheduled_date', new Date().toISOString().split('T')[0])
+        .or('status.eq.confirmed,status.eq.pending')
+
+      if (overdueError) throw overdueError
 
       // Calcular receita prevista do mês (apenas o que falta receber)
       const { data: monthlyRevenueData, error: monthlyRevenueError } = await supabase
@@ -177,6 +206,17 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
 
       if (upcomingError) throw upcomingError
 
+      // Buscar agendamentos realizados do mês
+      const { data: completedAppointments, error: completedError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .gte('created_at', startOfMonth.toISOString())
+        .lte('created_at', endOfMonth.toISOString())
+
+      if (completedError) throw completedError
+
       setDashboardData({
         todayAppointments: todayAppointments?.length || 0,
         todayRevenue,
@@ -184,6 +224,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         confirmedAppointments: confirmedAppointments?.length || 0,
         completedAppointments: completedAppointments?.length || 0,
         monthlyRevenue,
+        pendingPayments: pendingPaymentsData?.length || 0,
+        overdueAppointments: overdueAppointmentsData?.length || 0,
         upcomingAppointments: upcomingAppointments || []
       })
 
@@ -207,18 +249,6 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       case 'cancelled': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
-  }
-
-  // Função helper para verificar se agendamento está atrasado
-  const isAppointmentOverdue = (appointment: any) => {
-    if (!appointment.scheduled_date) return false
-    
-    const appointmentDate = new Date(appointment.scheduled_date)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0) // Zera horas para comparar apenas datas
-    
-    // Se a data já passou e o status ainda é confirmado ou pendente
-    return appointmentDate < today && (appointment.status === 'confirmed' || appointment.status === 'pending')
   }
 
   // Função helper para calcular total do agendamento
@@ -245,27 +275,22 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     onLogout()
   }
 
-  const generateAppointmentMessage = (data: {
-    clientName: string
-    service: string
-    date: string
-    time: string
-    location?: string
-    price?: number
-    notes?: string
-  }) => {
-    return `*🎨 AGENDAMENTO CONFIRMADO*
+  const navigateToPendingConfirmation = () => {
+    setCurrentView('appointments')
+    // Passar filtros para agendamentos pendentes de confirmação
+    setAppointmentFilters({ status: 'pending', paymentStatus: null })
+  }
 
-👤 *Cliente:* ${data.clientName}
-💄 *Serviço:* ${data.service}
-📅 *Data:* ${data.date}
-⏰ *Horário:* ${data.time}
-📍 *Local:* ${data.location || 'A combinar'}
-💰 *Valor:* R$ ${data.price?.toFixed(2) || 'A combinar'}
+  const navigateToPendingPayments = () => {
+    setCurrentView('appointments')
+    // Passar filtros para agendamentos confirmados com pagamentos pendentes
+    setAppointmentFilters({ status: 'confirmed', paymentStatus: 'pending' })
+  }
 
-${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
-
-✨ _Enviado via MakeUp Manager_`
+  const navigateToOverdue = () => {
+    setCurrentView('appointments')
+    // Passar filtros para agendamentos atrasados (apenas confirmados que já passaram da data)
+    setAppointmentFilters({ status: 'overdue', paymentStatus: null })
   }
 
   if (currentView === 'settings') {
@@ -301,7 +326,12 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
   }
 
   if (currentView === 'appointments') {
-    return <AppointmentsPage onBack={() => setCurrentView('dashboard')} user={user} />
+    return <AppointmentsPage 
+      onBack={() => setCurrentView('dashboard')} 
+      user={user}
+      initialFilter={appointmentFilters.status || 'all'}
+      initialPaymentFilter={appointmentFilters.paymentStatus || 'all'}
+    />
   }
 
   return (
@@ -384,23 +414,23 @@ ${data.notes ? `📝 *Observações:* ${data.notes}` : ''}
 
         {/* Status Cards Adicionais */}
         <div className="grid grid-cols-3 gap-1 mb-4">
-          <div className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-2 rounded-lg text-center">
+          <div className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-2 rounded-lg text-center cursor-pointer hover:scale-105 transition-transform" onClick={navigateToPendingConfirmation}>
             <div className="text-lg font-bold">
               {loading ? '...' : dashboardData.pendingAppointments}
             </div>
             <div className="text-xs opacity-90">Aguardando Confirmação</div>
           </div>
-          <div className="bg-gradient-to-br from-green-400 to-green-600 text-white p-2 rounded-lg text-center">
+          <div className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white p-2 rounded-lg text-center cursor-pointer hover:scale-105 transition-transform" onClick={navigateToPendingPayments}>
             <div className="text-lg font-bold">
-              {loading ? '...' : dashboardData.confirmedAppointments}
+              {loading ? '...' : dashboardData.pendingPayments}
             </div>
-            <div className="text-xs opacity-90">Confirmados</div>
+            <div className="text-xs opacity-90">Pendentes de Pagamento</div>
           </div>
-          <div className="bg-gradient-to-br from-purple-400 to-pink-500 text-white p-2 rounded-lg text-center">
-            <div className="text-lg font-bold text-sm">
-              {loading ? '...' : `R$ ${dashboardData.monthlyRevenue.toFixed(0)}`}
+          <div className="bg-gradient-to-br from-red-400 to-pink-500 text-white p-2 rounded-lg text-center cursor-pointer hover:scale-105 transition-transform" onClick={navigateToOverdue}>
+            <div className="text-lg font-bold">
+              {loading ? '...' : dashboardData.overdueAppointments}
             </div>
-            <div className="text-xs opacity-90">Previsto mês</div>
+            <div className="text-xs opacity-90">Pendências</div>
           </div>
         </div>
 

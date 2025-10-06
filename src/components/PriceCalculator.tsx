@@ -1202,48 +1202,48 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
       {/* Modal de Confirmação de Pagamento */}
       {showPaymentConfirmationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[95vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm sm:max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white p-6 rounded-t-3xl">
+            <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white p-4 sm:p-6 rounded-t-2xl sm:rounded-t-3xl flex-shrink-0">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                    <span className="text-2xl">💰</span>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl">💰</span>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-bold truncate">
                       Confirmar Pagamento
                     </h2>
-                    <p className="text-green-100 text-sm">
+                    <p className="text-green-100 text-xs sm:text-sm">
                       Entrada do agendamento
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowPaymentConfirmationModal(false)}
-                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 flex-shrink-0"
                 >
                   <span className="text-white text-lg">×</span>
                 </button>
               </div>
             </div>
 
-            {/* Body */}
-            <div className="p-6 space-y-5">
+            {/* Body - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
               {/* Resumo do Agendamento */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
-                <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-100">
+                <h4 className="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center text-sm sm:text-base">
                   <span className="mr-2">📋</span>
                   Resumo do Agendamento
                 </h4>
-                <div className="text-sm text-blue-800 space-y-2">
+                <div className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-2">
                   <div className="flex justify-between">
-                    <span><strong>👤 Cliente:</strong></span>
-                    <span>{clientName}</span>
+                    <span className="font-medium">👤 Cliente:</span>
+                    <span className="truncate ml-2">{clientName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span><strong>💰 Total:</strong></span>
+                    <span className="font-medium">💰 Total:</span>
                     <span className="font-semibold">R$ {(() => {
                       const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
                       const area = areas.find(a => a.id === selectedArea)
@@ -1255,43 +1255,43 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     })()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span><strong>💳 Entrada informada:</strong></span>
+                    <span className="font-medium">💳 Entrada:</span>
                     <span className="font-semibold text-green-600">R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span><strong>📅 Data:</strong></span>
-                    <span>{appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</span>
+                    <span className="font-medium">📅 Data:</span>
+                    <span className="truncate ml-2">{appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span><strong>⏰ Horário:</strong></span>
-                    <span>{appointmentTime || 'Não definido'}</span>
+                    <span className="font-medium">⏰ Horário:</span>
+                    <span className="truncate ml-2">{appointmentTime || 'Não definido'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Confirmação da Entrada */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-100">
-                <h4 className="font-semibold text-yellow-800 mb-3 flex items-center">
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-yellow-100">
+                <h4 className="font-semibold text-yellow-800 mb-2 sm:mb-3 flex items-center text-sm sm:text-base">
                   <span className="mr-2">💰</span>
                   Confirmação da Entrada
                 </h4>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-yellow-800 mb-2">
+                  <div className="text-2xl sm:text-3xl font-bold text-yellow-800 mb-1 sm:mb-2">
                     R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}
                   </div>
-                  <p className="text-sm text-yellow-700">
+                  <p className="text-xs sm:text-sm text-yellow-700">
                     Este valor da entrada realmente foi pago pelo cliente?
                   </p>
                 </div>
               </div>
 
               {/* Aviso Importante */}
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-2xl border border-red-100">
-                <div className="flex items-start space-x-3">
-                  <span className="text-red-500 text-xl">⚠️</span>
+              <div className="bg-gradient-to-r from-red-50 to-pink-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-100">
+                <div className="flex items-start space-x-2 sm:space-x-3">
+                  <span className="text-red-500 text-lg sm:text-xl flex-shrink-0">⚠️</span>
                   <div>
-                    <h4 className="font-semibold text-red-800 mb-2">Importante</h4>
-                    <p className="text-sm text-red-700">
+                    <h4 className="font-semibold text-red-800 mb-1 sm:mb-2 text-sm sm:text-base">Importante</h4>
+                    <p className="text-xs sm:text-sm text-red-700">
                       Ao confirmar, o agendamento será marcado como "Confirmado" e não poderá ser alterado. Certifique-se de que o pagamento foi realmente recebido.
                     </p>
                   </div>
@@ -1299,9 +1299,9 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 rounded-b-3xl border-t border-gray-200">
-              <div className="flex space-x-3">
+            {/* Footer - Fixed */}
+            <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 rounded-b-2xl sm:rounded-b-3xl border-t border-gray-200 flex-shrink-0">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <button
                   onClick={() => {
                     setShowPaymentConfirmationModal(false)
@@ -1314,7 +1314,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       }
                     }, 100)
                   }}
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+                  className="w-full py-2.5 sm:py-3 px-4 sm:px-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg sm:rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base"
                 >
                   ✏️ Ajustar Valor
                 </button>
@@ -1323,7 +1323,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     setShowPaymentConfirmationModal(false)
                     createAppointmentConfirmed()
                   }}
-                  className="flex-1 py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+                  className="w-full py-2.5 sm:py-3 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg sm:rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base"
                 >
                   ✅ Sim, foi pago
                 </button>

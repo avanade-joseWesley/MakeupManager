@@ -23,7 +23,7 @@ export default class ErrorBoundary extends React.Component<React.PropsWithChildr
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center p-6">
-          <div className="max-w-md bg-white p-6 rounded-lg shadow">
+          <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-lg font-semibold">Algo deu errado</h2>
             <p className="text-sm text-gray-600 mt-2">Ocorreu um erro ao carregar esta seção. Veja o console para detalhes.</p>
             <pre className="mt-3 text-xs text-red-600">{this.state.error?.message}</pre>

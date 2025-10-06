@@ -907,73 +907,73 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
       {/* Modal Agendamento */}
       {showAppointmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm sm:max-w-2xl w-full max-h-[80vh] overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white p-6 rounded-t-3xl">
+            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white p-3 sm:p-4 sm:p-6 rounded-t-2xl sm:rounded-t-3xl flex-shrink-0">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                    <span className="text-2xl">📅</span>
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-8 h-8 sm:w-10 sm:w-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span className="text-lg sm:text-xl sm:text-2xl">📅</span>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base sm:text-lg sm:text-xl font-bold truncate">
                       {isAppointmentConfirmed ? 'Confirmar' : 'Criar'} Agendamento
                     </h2>
-                    <p className="text-blue-100 text-sm">
+                    <p className="text-blue-100 text-xs sm:text-sm">
                       {clientName}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowAppointmentModal(false)}
-                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                  className="w-7 h-7 sm:w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 flex-shrink-0"
                 >
-                  <span className="text-white text-lg">×</span>
+                  <span className="text-white text-sm sm:text-lg">×</span>
                 </button>
               </div>
             </div>
 
             {/* Body */}
-            <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+            <div className="max-h-[40vh] sm:max-h-[50vh] overflow-y-auto p-3 sm:p-4 sm:p-6 space-y-3 sm:space-y-4 sm:space-y-5">
               {/* Cliente e Telefone */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-2xl border border-indigo-100">
-                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                    <span className="mr-2">👤</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-indigo-100">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                    <span className="mr-1 sm:mr-2">👤</span>
                     Cliente
                   </label>
                   <input
                     type="text"
                     value={clientName}
                     readOnly
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-900 font-medium"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl bg-gray-50 text-gray-900 font-medium text-sm sm:text-base"
                   />
                 </div>
 
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-2xl border border-purple-100">
-                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                    <span className="mr-2">📱</span>
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-purple-100">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                    <span className="mr-1 sm:mr-2">📱</span>
                     Telefone
                   </label>
                   <input
                     type="tel"
                     value={clientPhone}
                     readOnly
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-900 font-medium"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl bg-gray-50 text-gray-900 font-medium text-sm sm:text-base"
                   />
                 </div>
               </div>
 
               {/* Serviços do Agendamento */}
-              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-2xl border border-emerald-100">
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <span className="mr-2">💄</span>
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-emerald-100">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                  <span className="mr-1 sm:mr-2">💄</span>
                   Serviços do Agendamento
                 </label>
 
                 {calculatedPrices.services.length > 0 ? (
-                  <div className="space-y-3 max-h-40 overflow-y-auto">
+                  <div className="space-y-2 sm:space-y-3 max-h-32 sm:max-h-40 overflow-y-auto">
                     {calculatedPrices.services.map((service, index) => {
                       const serviceInfo = services.find(s => s.id === service.serviceId)
                       const regionalPrice = regionalPrices.find(
@@ -982,19 +982,19 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       const isRegionalPrice = !!regionalPrice
 
                       return (
-                        <div key={index} className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                        <div key={index} className="bg-white p-2 sm:p-3 rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
                           <div className="flex justify-between items-center">
                             <div className="flex-1 min-w-0">
-                              <span className="font-semibold text-gray-900 text-sm">
+                              <span className="font-semibold text-gray-900 text-xs sm:text-sm">
                                 {service.quantity}x {serviceInfo?.name}
                               </span>
                               {isRegionalPrice && (
-                                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                <span className="ml-1 sm:ml-2 px-1 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                                   ⭐ Regional
                                 </span>
                               )}
                             </div>
-                            <span className="font-bold text-green-600 text-sm ml-3">
+                            <span className="font-bold text-green-600 text-xs sm:text-sm ml-2 sm:ml-3">
                               R$ {service.totalPrice.toFixed(2)}
                             </span>
                           </div>
@@ -1003,17 +1003,17 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    <div className="text-2xl mb-2">💄</div>
-                    <p className="text-sm">Nenhum serviço selecionado</p>
+                  <div className="text-center py-4 sm:py-6 text-gray-500">
+                    <div className="text-xl sm:text-2xl mb-1 sm:mb-2">💄</div>
+                    <p className="text-xs sm:text-sm">Nenhum serviço selecionado</p>
                   </div>
                 )}
 
                 {/* Total dos Serviços */}
-                <div className="mt-4 pt-3 border-t border-emerald-200">
+                <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-emerald-200">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700">💰 Total dos Serviços:</span>
-                    <span className="text-lg font-bold text-green-600">
+                    <span className="font-semibold text-gray-700 text-xs sm:text-sm">💰 Total dos Serviços:</span>
+                    <span className="text-base sm:text-lg font-bold text-green-600">
                       R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}
                     </span>
                   </div>
@@ -1021,24 +1021,24 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               </div>
 
               {/* Informações de Pagamento */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-100">
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <span className="mr-2">💳</span>
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-yellow-100">
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                  <span className="mr-1 sm:mr-2">💳</span>
                   Informações de Pagamento
                 </label>
 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                     💰 Valor da Entrada Paga
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                    <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium text-sm">R$</span>
                     <input
                       id="downPaymentAmount"
                       type="number"
                       value={downPaymentAmount}
                       onChange={(e) => setDownPaymentAmount(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200 bg-white text-gray-900"
+                      className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200 bg-white text-gray-900 text-sm"
                       placeholder="0.00"
                       step="0.01"
                       min="0"
@@ -1047,8 +1047,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 </div>
 
                 {/* Status do pagamento calculado */}
-                <div className="bg-white p-3 rounded-xl border border-yellow-200">
-                  <div className="text-sm text-gray-700">
+                <div className="bg-white p-2 sm:p-3 rounded-lg sm:rounded-xl border border-yellow-200">
+                  <div className="text-xs sm:text-sm text-gray-700">
                     <strong>📊 Status calculado:</strong>{' '}
                     <span className="font-medium">
                       {(() => {
@@ -1067,20 +1067,20 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               </div>
 
               {/* Checkbox para confirmar agendamento */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
-                <div className="flex items-start space-x-3">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-blue-100">
+                <div className="flex items-start space-x-2 sm:space-x-3">
                   <input
                     type="checkbox"
                     id="isAppointmentConfirmed"
                     checked={isAppointmentConfirmed}
                     onChange={(e) => setIsAppointmentConfirmed(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    className="mt-0.5 sm:mt-1 h-3 w-3 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <div>
-                    <label htmlFor="isAppointmentConfirmed" className="text-sm font-semibold text-gray-700 cursor-pointer">
+                    <label htmlFor="isAppointmentConfirmed" className="text-xs sm:text-sm font-semibold text-gray-700 cursor-pointer">
                       ✅ Confirmar agendamento
                     </label>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-gray-600 mt-0.5 sm:mt-1">
                       Requer endereço, data e horário para prosseguir
                     </p>
                   </div>
@@ -1091,46 +1091,46 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               {isAppointmentConfirmed && (
                 <>
                   {/* Endereço */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-2xl border border-green-100">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                      <span className="mr-2">📍</span>
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-green-100">
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                      <span className="mr-1 sm:mr-2">📍</span>
                       Endereço do Agendamento *
                     </label>
                     <textarea
                       value={appointmentAddress}
                       onChange={(e) => setAppointmentAddress(e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white text-gray-900 resize-none"
+                      rows={2}
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white text-gray-900 resize-none text-sm"
                       placeholder="Digite o endereço completo do agendamento"
                     />
                   </div>
 
                   {/* Data e Horário */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-4 rounded-2xl border border-cyan-100">
-                      <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                        <span className="mr-2">📅</span>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:gap-4">
+                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-cyan-100">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                        <span className="mr-1 sm:mr-2">📅</span>
                         Data *
                       </label>
                       <input
                         type="date"
                         value={appointmentDate}
                         onChange={(e) => setAppointmentDate(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-200 bg-white text-gray-900"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-200 bg-white text-gray-900 text-sm"
                         min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
 
-                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-4 rounded-2xl border border-violet-100">
-                      <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                        <span className="mr-2">⏰</span>
+                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-violet-100">
+                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                        <span className="mr-1 sm:mr-2">⏰</span>
                         Horário *
                       </label>
                       <input
                         type="time"
                         value={appointmentTime}
                         onChange={(e) => setAppointmentTime(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900"
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
                       />
                     </div>
                   </div>
@@ -1138,13 +1138,13 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               )}
 
               {/* Resumo do Agendamento */}
-              <div className={`p-4 rounded-2xl border ${isAppointmentConfirmed ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
-                <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                  <span className="mr-2">📋</span>
+              <div className={`p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border ${isAppointmentConfirmed ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
+                <h4 className="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center text-xs sm:text-sm">
+                  <span className="mr-1 sm:mr-2">📋</span>
                   Resumo do Agendamento
                 </h4>
-                <div className={`text-sm ${isAppointmentConfirmed ? 'text-blue-800' : 'text-orange-800'}`}>
-                  <div className="space-y-1">
+                <div className={`text-xs sm:text-sm ${isAppointmentConfirmed ? 'text-blue-800' : 'text-orange-800'}`}>
+                  <div className="space-y-0.5 sm:space-y-1">
                     <div><strong>💄 Serviços:</strong> {calculatedPrices.services.length} selecionado(s)</div>
                     <div><strong>📍 Local:</strong> {areas.find(a => a.id === selectedArea)?.name}</div>
                     <div><strong>💰 Total:</strong> R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}</div>
@@ -1168,8 +1168,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 rounded-b-3xl border-t border-gray-200">
-              <div className="flex space-x-3">
+            <div className="bg-gray-50 px-3 sm:px-4 sm:px-6 py-2 sm:py-3 sm:py-4 rounded-b-2xl sm:rounded-b-3xl border-t border-gray-200 flex-shrink-0">
+              <div className="flex space-x-2 sm:space-x-3">
                 <button
                   onClick={() => {
                     setShowAppointmentModal(false)
@@ -1180,13 +1180,13 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     setDownPaymentAmount('0')
                     setPaymentStatus('pending')
                   }}
-                  className="flex-1 py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+                  className="flex-1 py-2 sm:py-3 px-3 sm:px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg sm:rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 text-xs sm:text-sm"
                 >
                   ❌ Cancelar
                 </button>
                 <button
                   onClick={createAppointment}
-                  className={`flex-1 py-3 px-6 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg ${
+                  className={`flex-1 py-2 sm:py-3 px-3 sm:px-6 text-white rounded-lg sm:rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-xs sm:text-sm ${
                     isAppointmentConfirmed
                       ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
                       : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600'
@@ -1203,48 +1203,48 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       {/* Modal de Confirmação de Pagamento */}
       {showPaymentConfirmationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm sm:max-w-lg w-full max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-sm sm:max-w-lg w-full max-h-[80vh] overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white p-4 sm:p-6 rounded-t-2xl sm:rounded-t-3xl flex-shrink-0">
+            <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white p-3 sm:p-4 rounded-t-2xl sm:rounded-t-3xl flex-shrink-0">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                    <span className="text-xl sm:text-2xl">💰</span>
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span className="text-lg sm:text-xl">💰</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-lg sm:text-xl font-bold truncate">
+                    <h2 className="text-base sm:text-lg font-bold truncate">
                       Confirmar Pagamento
                     </h2>
-                    <p className="text-green-100 text-xs sm:text-sm">
+                    <p className="text-green-100 text-xs">
                       Entrada do agendamento
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowPaymentConfirmationModal(false)}
-                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 flex-shrink-0"
+                  className="w-7 h-7 sm:w-8 sm:h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 flex-shrink-0 ml-2"
                 >
-                  <span className="text-white text-lg">×</span>
+                  <span className="text-white text-sm sm:text-lg">×</span>
                 </button>
               </div>
             </div>
 
             {/* Body - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
+            <div className="max-h-[35vh] sm:max-h-[45vh] overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
               {/* Resumo do Agendamento */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-100">
-                <h4 className="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center text-sm sm:text-base">
-                  <span className="mr-2">📋</span>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-blue-100">
+                <h4 className="font-semibold text-gray-800 mb-1 sm:mb-2 flex items-center text-xs sm:text-sm">
+                  <span className="mr-1 sm:mr-2">📋</span>
                   Resumo do Agendamento
                 </h4>
-                <div className="text-xs sm:text-sm text-blue-800 space-y-1 sm:space-y-2">
+                <div className="text-xs text-blue-800 space-y-1">
                   <div className="flex justify-between">
                     <span className="font-medium">👤 Cliente:</span>
-                    <span className="truncate ml-2">{clientName}</span>
+                    <span className="truncate ml-1 text-xs">{clientName}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">💰 Total:</span>
-                    <span className="font-semibold">R$ {(() => {
+                    <span className="font-semibold text-sm">R$ {(() => {
                       const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
                       const area = areas.find(a => a.id === selectedArea)
                       const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
@@ -1256,42 +1256,42 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">💳 Entrada:</span>
-                    <span className="font-semibold text-green-600">R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</span>
+                    <span className="font-semibold text-green-600 text-sm">R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">📅 Data:</span>
-                    <span className="truncate ml-2">{appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</span>
+                    <span className="truncate ml-1 text-xs">{appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">⏰ Horário:</span>
-                    <span className="truncate ml-2">{appointmentTime || 'Não definido'}</span>
+                    <span className="truncate ml-1 text-xs">{appointmentTime || 'Não definido'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Confirmação da Entrada */}
-              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-yellow-100">
-                <h4 className="font-semibold text-yellow-800 mb-2 sm:mb-3 flex items-center text-sm sm:text-base">
-                  <span className="mr-2">💰</span>
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-yellow-100">
+                <h4 className="font-semibold text-yellow-800 mb-1 sm:mb-2 flex items-center text-xs sm:text-sm">
+                  <span className="mr-1 sm:mr-2">💰</span>
                   Confirmação da Entrada
                 </h4>
                 <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-yellow-800 mb-1 sm:mb-2">
+                  <div className="text-xl sm:text-2xl font-bold text-yellow-800 mb-1">
                     R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}
                   </div>
-                  <p className="text-xs sm:text-sm text-yellow-700">
+                  <p className="text-xs text-yellow-700">
                     Este valor da entrada realmente foi pago pelo cliente?
                   </p>
                 </div>
               </div>
 
               {/* Aviso Importante */}
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-red-100">
-                <div className="flex items-start space-x-2 sm:space-x-3">
-                  <span className="text-red-500 text-lg sm:text-xl flex-shrink-0">⚠️</span>
+              <div className="bg-gradient-to-r from-red-50 to-pink-50 p-2 sm:p-3 rounded-lg sm:rounded-xl border border-red-100">
+                <div className="flex items-start space-x-1 sm:space-x-2">
+                  <span className="text-red-500 text-base sm:text-lg flex-shrink-0">⚠️</span>
                   <div>
-                    <h4 className="font-semibold text-red-800 mb-1 sm:mb-2 text-sm sm:text-base">Importante</h4>
-                    <p className="text-xs sm:text-sm text-red-700">
+                    <h4 className="font-semibold text-red-800 mb-1 text-xs sm:text-sm">Importante</h4>
+                    <p className="text-xs text-red-700">
                       Ao confirmar, o agendamento será marcado como "Confirmado" e não poderá ser alterado. Certifique-se de que o pagamento foi realmente recebido.
                     </p>
                   </div>
@@ -1300,8 +1300,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
             </div>
 
             {/* Footer - Fixed */}
-            <div className="bg-gray-50 px-4 sm:px-6 py-3 sm:py-4 rounded-b-2xl sm:rounded-b-3xl border-t border-gray-200 flex-shrink-0">
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <div className="bg-gray-50 px-3 sm:px-4 py-2 sm:py-3 rounded-b-2xl sm:rounded-b-3xl border-t border-gray-200 flex-shrink-0">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => {
                     setShowPaymentConfirmationModal(false)
@@ -1314,7 +1314,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       }
                     }, 100)
                   }}
-                  className="w-full py-2.5 sm:py-3 px-4 sm:px-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg sm:rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base"
+                  className="w-full py-2 px-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-xs sm:text-sm"
                 >
                   ✏️ Ajustar Valor
                 </button>
@@ -1323,7 +1323,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     setShowPaymentConfirmationModal(false)
                     createAppointmentConfirmed()
                   }}
-                  className="w-full py-2.5 sm:py-3 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg sm:rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-sm sm:text-base"
+                  className="w-full py-2 px-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-lg font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg text-xs sm:text-sm"
                 >
                   ✅ Sim, foi pago
                 </button>

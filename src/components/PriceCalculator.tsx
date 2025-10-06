@@ -38,6 +38,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   
   // Opções adicionais
   const [includeTravelFee, setIncludeTravelFee] = useState(false)
+  const [useManualPrice, setUseManualPrice] = useState(false)
+  const [manualPrice, setManualPrice] = useState('')
   
   // Estados dos modais
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
@@ -212,18 +214,20 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
   // Definir automaticamente 30% do valor total quando confirmar agendamento
   useEffect(() => {
-    if (isAppointmentConfirmed && calculatedPrices.services.length > 0) {
-      const totalValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+    if (isAppointmentConfirmed && (calculatedPrices.services.length > 0 || (useManualPrice && manualPrice))) {
+      const totalValue = useManualPrice && manualPrice ? 
+        parseFloat(manualPrice.replace(',', '.')) : 
+        calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
       const area = areas.find(a => a.id === selectedArea)
       const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
         regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
       )
       const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
-      const finalTotal = totalValue + travelFee
+      const finalTotal = useManualPrice && manualPrice ? totalValue : totalValue + travelFee
       const thirtyPercent = (finalTotal * 0.3).toFixed(2)
       setDownPaymentAmount(thirtyPercent)
     }
-  }, [isAppointmentConfirmed, calculatedPrices, selectedArea, areas, regionalPrices, includeTravelFee])
+  }, [isAppointmentConfirmed, calculatedPrices, selectedArea, areas, regionalPrices, includeTravelFee, useManualPrice, manualPrice])
 
   // Usar os valores calculados diretamente, sem atualizar o estado
 
@@ -233,6 +237,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     setSelectedArea('')
     setAppointmentServices([])
     setIncludeTravelFee(false)
+    setUseManualPrice(false)
+    setManualPrice('')
     setAppointmentAddress('')
     setAppointmentDate('')
     setAppointmentTime('')
@@ -242,8 +248,18 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   }
 
   const sendWhatsAppBudget = () => {
-    if (!clientName || !clientPhone || calculatedPrices.services.length === 0 || !selectedArea) {
-      alert('Por favor, preencha todos os campos obrigatórios e selecione pelo menos um serviço!')
+    if (!clientName || !clientPhone || !selectedArea) {
+      alert('Por favor, preencha todos os campos obrigatórios!')
+      return
+    }
+
+    if (!useManualPrice && calculatedPrices.services.length === 0) {
+      alert('Por favor, selecione pelo menos um serviço ou habilite o valor diferenciado!')
+      return
+    }
+
+    if (useManualPrice && (!manualPrice || parseFloat(manualPrice.replace(',', '.')) <= 0)) {
+      alert('Por favor, informe um valor válido para o atendimento diferenciado!')
       return
     }
 
@@ -256,44 +272,60 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     let message = `🌟 *ORÇAMENTO PERSONALIZADO* 🌟\n\n`
     message += `👤 *Cliente:* ${clientName}\n`
     message += `📱 *Telefone:* ${clientPhone}\n\n`
-    message += `💄 *Serviços Solicitados:*\n`
 
-    calculatedPrices.services.forEach((service, index) => {
-      const serviceInfo = services.find(s => s.id === service.serviceId)
-      const regionalPrice = regionalPrices.find(
-        rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
-      )
-      const unitPrice = regionalPrice ? regionalPrice.price : service.unitPrice
+    if (useManualPrice && manualPrice) {
+      message += `� *VALOR DIFERENCIADO DO ATENDIMENTO:*\n`
+      message += `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}\n\n`
+      message += `⭐ *Valor personalizado definido para este atendimento*\n\n`
+    } else {
+      message += `�💄 *Serviços Solicitados:*\n`
 
-      message += `${index + 1}. ${serviceInfo?.name} (${service.quantity}x) - R$ ${(unitPrice * service.quantity).toFixed(2)}\n`
-      if (regionalPrice) {
-        message += `   └ Preço regional para ${area?.name}\n`
-      }
-    })
+      calculatedPrices.services.forEach((service, index) => {
+        const serviceInfo = services.find(s => s.id === service.serviceId)
+        const regionalPrice = regionalPrices.find(
+          rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
+        )
+        const unitPrice = regionalPrice ? regionalPrice.price : service.unitPrice
 
-    message += `\n📍 *Local:* ${area?.name}\n\n`
+        message += `${index + 1}. ${serviceInfo?.name} (${service.quantity}x) - R$ ${(unitPrice * service.quantity).toFixed(2)}\n`
+        if (regionalPrice) {
+          message += `   └ Preço regional para ${area?.name}\n`
+        }
+      })
+
+      message += `\n📍 *Local:* ${area?.name}\n\n`
+    }
 
     // Detalhes do preço
     message += `💰 *DETALHES DO ORÇAMENTO:*\n`
 
-    const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
-    message += `• Subtotal dos serviços: R$ ${servicesTotal.toFixed(2)}\n`
+    // Se usar valor manual, mostrar apenas o total diferenciado
+    if (useManualPrice && manualPrice) {
+      const manualValue = parseFloat(manualPrice.replace(',', '.'))
+      message += `\n🎯 *VALOR DIFERENCIADO: R$ ${manualValue.toFixed(2)}*\n\n`
+      message += `⭐ *Valor personalizado definido para este atendimento*\n\n`
+    } else {
+      const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+      message += `• Subtotal dos serviços: R$ ${servicesTotal.toFixed(2)}\n`
 
-    if (includeTravelFee && !hasAnyRegionalPrice && area && area.travel_fee > 0) {
-      message += `• Taxa de deslocamento: R$ ${area.travel_fee.toFixed(2)}\n`
+      if (includeTravelFee && !hasAnyRegionalPrice && area && area.travel_fee > 0) {
+        message += `• Taxa de deslocamento: R$ ${area.travel_fee.toFixed(2)}\n`
+      }
+
+      const finalTotal = servicesTotal + (includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0)
+      message += `\n🎯 *TOTAL: R$ ${finalTotal.toFixed(2)}*\n\n`
+
+      if (hasAnyRegionalPrice) {
+        message += `⭐ *Preços regionais aplicados* (inclui deslocamento)\n\n`
+      }
     }
 
-    const finalTotal = servicesTotal + (includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0)
-    message += `\n🎯 *TOTAL: R$ ${finalTotal.toFixed(2)}*\n\n`
-
-    if (hasAnyRegionalPrice) {
-      message += `⭐ *Preços regionais aplicados* (inclui deslocamento)\n\n`
-    }
-
-    message += `⏰ *Duração estimada:* ${calculatedPrices.services.reduce((total, service) => {
-      const serviceInfo = services.find(s => s.id === service.serviceId)
-      return total + (serviceInfo?.duration_minutes || 0) * service.quantity
-    }, 0)} minutos\n\n`
+    message += `⏰ *Duração estimada:* ${useManualPrice && manualPrice ? 
+      'A combinar' : 
+      calculatedPrices.services.reduce((total, service) => {
+        const serviceInfo = services.find(s => s.id === service.serviceId)
+        return total + (serviceInfo?.duration_minutes || 0) * service.quantity
+      }, 0)} minutos\n\n`
     message += `✨ Orçamento válido por 7 dias\n`
     message += `📞 Para confirmar, responda esta mensagem!`
 
@@ -330,7 +362,9 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       }
 
       // Calcular valores
-      const totalServiceValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+      const totalServiceValue = useManualPrice && manualPrice ? 
+        parseFloat(manualPrice.replace(',', '.')) : 
+        calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
 
       // Criar agendamento não confirmado
       const { data: appointment, error: appointmentError } = await supabase
@@ -418,8 +452,13 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       return
     }
 
-    if (calculatedPrices.services.length === 0) {
-      alert('Por favor, selecione pelo menos um serviço!')
+    if (!useManualPrice && calculatedPrices.services.length === 0) {
+      alert('Por favor, selecione pelo menos um serviço ou habilite o valor diferenciado!')
+      return
+    }
+
+    if (useManualPrice && (!manualPrice || parseFloat(manualPrice.replace(',', '.')) <= 0)) {
+      alert('Por favor, informe um valor válido para o atendimento diferenciado!')
       return
     }
 
@@ -505,8 +544,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
       if (checkError) throw checkError
 
-      // Verificar se algum agendamento existente tem os mesmos serviços
-      if (existingAppointments && existingAppointments.length > 0) {
+      // Verificar se algum agendamento existente tem os mesmos serviços (apenas se não for valor manual)
+      if (existingAppointments && existingAppointments.length > 0 && !useManualPrice) {
         for (const existingAppointment of existingAppointments) {
           const existingServices = existingAppointment.appointment_services || []
           
@@ -529,7 +568,9 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       }
 
       // 3. Calcular valores de pagamento
-      const totalServiceValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+      const totalServiceValue = useManualPrice && manualPrice ? 
+        parseFloat(manualPrice.replace(',', '.')) : 
+        calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
       const downPaymentPaid = parseFloat(downPaymentAmount || '0')
 
       // Determinar status do pagamento
@@ -564,30 +605,34 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           payment_total_service: totalServiceValue,
           payment_status: finalPaymentStatus,
 
-          notes: `Agendamento criado via calculadora - ${calculatedPrices.services.length} serviço(s)`
+          notes: useManualPrice ? 
+            `Agendamento criado via calculadora - Valor diferenciado: R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` : 
+            `Agendamento criado via calculadora - ${calculatedPrices.services.length} serviço(s)`
         })
         .select('id')
         .single()
 
       if (appointmentError) throw appointmentError
 
-      // 5. Inserir os serviços do agendamento
-      const appointmentServicesData = calculatedPrices.services.map(service => ({
-        appointment_id: appointment.id,
-        service_id: service.serviceId,
-        quantity: service.quantity,
-        unit_price: service.unitPrice,
-        total_price: service.totalPrice
-      }))
+      // 5. Inserir os serviços do agendamento (apenas se não for valor manual)
+      if (!useManualPrice && calculatedPrices.services.length > 0) {
+        const appointmentServicesData = calculatedPrices.services.map(service => ({
+          appointment_id: appointment.id,
+          service_id: service.serviceId,
+          quantity: service.quantity,
+          unit_price: service.unitPrice,
+          total_price: service.totalPrice
+        }))
 
-      const { error: servicesError } = await supabase
-        .from('appointment_services')
-        .insert(appointmentServicesData)
+        const { error: servicesError } = await supabase
+          .from('appointment_services')
+          .insert(appointmentServicesData)
 
-      if (servicesError) throw servicesError
+        if (servicesError) throw servicesError
+      }
 
       // 6. Sucesso - fechar modal e limpar dados
-      alert(`✅ Agendamento ${isAppointmentConfirmed ? 'confirmado' : 'criado'} com sucesso!`)
+      alert(`✅ Agendamento ${isAppointmentConfirmed ? 'confirmado' : 'criado'} com sucesso!${useManualPrice ? ' (Valor diferenciado aplicado)' : ''}`)
       
       setShowAppointmentModal(false)
       setAppointmentAddress('')
@@ -616,6 +661,53 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       <h2 className="text-lg font-semibold text-gray-800 mb-2">
         🧮 Calculadora de Preços
       </h2>
+      
+      {/* Opção de Valor Manual */}
+      <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            id="useManualPrice"
+            checked={useManualPrice}
+            onChange={(e) => {
+              setUseManualPrice(e.target.checked)
+              if (!e.target.checked) {
+                setManualPrice('')
+              }
+            }}
+            className="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+          />
+          <div className="flex-1">
+            <label htmlFor="useManualPrice" className="text-sm font-semibold text-purple-800 cursor-pointer">
+              💰 Usar Valor Diferenciado
+            </label>
+            <p className="text-xs text-purple-600 mt-1">
+              Permite definir um valor personalizado para este atendimento, ignorando o cálculo automático dos serviços.
+            </p>
+          </div>
+        </div>
+        
+        {useManualPrice && (
+          <div className="mt-3">
+            <label className="block text-sm font-medium text-purple-800 mb-2">
+              Valor Total do Atendimento *
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+              <NumericInput
+                value={manualPrice}
+                onChange={setManualPrice}
+                decimalPlaces={2}
+                formatCurrency={true}
+                currency="BRL"
+                locale="pt-BR"
+                className="w-full pl-12 pr-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+        )}
+      </div>
       
       <div className="space-y-2">
         {/* Dados do Cliente */}
@@ -954,16 +1046,26 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-bold text-gray-800">Total:</span>
-                  <span className="text-2xl font-bold text-green-600">R$ {(() => {
-                    const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
-                    const area = areas.find(a => a.id === selectedArea)
-                    const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
-                      regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
-                    )
-                    const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
-                    return (servicesTotal + travelFee).toFixed(2)
-                  })()}</span>
+                  <span className="text-2xl font-bold text-green-600">
+                    {useManualPrice && manualPrice ? 
+                      `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` :
+                      `R$ ${(() => {
+                        const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                        const area = areas.find(a => a.id === selectedArea)
+                        const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
+                          regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
+                        )
+                        const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+                        return (servicesTotal + travelFee).toFixed(2)
+                      })()}`
+                    }
+                  </span>
                 </div>
+                {useManualPrice && manualPrice && (
+                  <div className="mt-2 text-sm text-purple-600">
+                    💰 Valor diferenciado aplicado
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1010,6 +1112,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         <div className="mt-4 p-3 bg-green-50 rounded-lg">
           <h4 className="font-medium text-green-800 mb-2">📝 Como funciona:</h4>
           <ul className="text-sm text-green-700 space-y-1">
+            <li>• <strong>Valor Diferenciado:</strong> Permite definir um preço personalizado para o atendimento completo</li>
             <li>• <strong>Clique nas categorias</strong> para expandir e ver os serviços disponíveis</li>
             <li>• <strong>Marque os checkboxes</strong> para selecionar serviços desejados</li>
             <li>• <strong>Ajuste as quantidades</strong> dos serviços selecionados</li>
@@ -1128,8 +1231,26 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   Serviços do Agendamento
                 </label>
 
-                {calculatedPrices.services.length > 0 ? (
-                  <div className="space-y-2 sm:space-y-3 max-h-32 sm:max-h-40 overflow-y-auto">
+                {useManualPrice && manualPrice ? (
+                  <div className="space-y-2">
+                    <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <span className="font-semibold text-purple-900 text-sm">
+                            💰 Valor Diferenciado do Atendimento
+                          </span>
+                          <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                            Valor Personalizado
+                          </span>
+                        </div>
+                        <span className="font-bold text-purple-600 text-lg">
+                          R$ {parseFloat(manualPrice.replace(',', '.')).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : calculatedPrices.services.length > 0 ? (
+                  <div className="space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
                     {calculatedPrices.services.map((service, index) => {
                       const serviceInfo = services.find(s => s.id === service.serviceId)
                       const regionalPrice = regionalPrices.find(
@@ -1168,9 +1289,14 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 {/* Total dos Serviços */}
                 <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-emerald-200">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-700 text-xs sm:text-sm">💰 Total dos Serviços:</span>
+                    <span className="font-semibold text-gray-700 text-xs sm:text-sm">
+                      {useManualPrice && manualPrice ? '💰 Valor do Atendimento:' : '💰 Total dos Serviços:'}
+                    </span>
                     <span className="text-base sm:text-lg font-bold text-green-600">
-                      R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}
+                      {useManualPrice && manualPrice ? 
+                        `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` :
+                        `R$ ${calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}`
+                      }
                     </span>
                   </div>
                 </div>
@@ -1301,13 +1427,16 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 </h4>
                 <div className={`text-xs sm:text-sm ${isAppointmentConfirmed ? 'text-blue-800' : 'text-orange-800'}`}>
                   <div className="space-y-0.5 sm:space-y-1">
-                    <div><strong>💄 Serviços:</strong> {calculatedPrices.services.length} selecionado(s)</div>
+                    <div><strong>💄 Serviços:</strong> {useManualPrice && manualPrice ? 'Valor diferenciado' : `${calculatedPrices.services.length} selecionado(s)`}</div>
                     <div><strong>📍 Local:</strong> {areas.find(a => a.id === selectedArea)?.name}</div>
-                    <div><strong>💰 Total:</strong> R$ {calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}</div>
+                    <div><strong>💰 Total:</strong> {useManualPrice && manualPrice ? `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` : `R$ ${calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}`}</div>
                     {parseFloat(downPaymentAmount || '0') > 0 && (
                       <>
                         <div><strong>💳 Entrada:</strong> R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</div>
-                        <div><strong>⏳ Pendente:</strong> R$ {(calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0) - parseFloat(downPaymentAmount || '0')).toFixed(2)}</div>
+                        <div><strong>⏳ Pendente:</strong> R$ {(() => {
+                          const totalValue = useManualPrice && manualPrice ? parseFloat(manualPrice.replace(',', '.')) : calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                          return (totalValue - parseFloat(downPaymentAmount || '0')).toFixed(2)
+                        })()}</div>
                       </>
                     )}
                     <div><strong>📊 Status:</strong> {isAppointmentConfirmed ? 'Agendamento Confirmado' : 'Aguardando Confirmação'}</div>
@@ -1408,15 +1537,20 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">💰 Total:</span>
-                    <span className="font-semibold text-sm">R$ {(() => {
-                      const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
-                      const area = areas.find(a => a.id === selectedArea)
-                      const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
-                        regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
-                      )
-                      const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
-                      return (servicesTotal + travelFee).toFixed(2)
-                    })()}</span>
+                    <span className="font-semibold text-sm">
+                      {useManualPrice && manualPrice ? 
+                        `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` :
+                        `R$ ${(() => {
+                          const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                          const area = areas.find(a => a.id === selectedArea)
+                          const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
+                            regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
+                          )
+                          const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+                          return (servicesTotal + travelFee).toFixed(2)
+                        })()}`
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">💳 Entrada:</span>

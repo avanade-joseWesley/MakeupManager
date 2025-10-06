@@ -18,8 +18,20 @@ CREATE TABLE IF NOT EXISTS appointments (
   -- Localização específica do agendamento
   appointment_address TEXT,
 
-  -- Valor total recebido no atendimento
-  total_received DECIMAL(10,2) DEFAULT 0,
+  -- Valor total do atendimento
+  payment_total_service DECIMAL(10,2) DEFAULT 0,
+
+  -- Status do pagamento
+  payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('paid', 'pending', 'partial')),
+
+  -- Controle de edição
+  last_edited_at TIMESTAMP WITH TIME ZONE,
+  edited_by UUID REFERENCES auth.users(id),
+
+  -- WhatsApp
+  whatsapp_sent BOOLEAN DEFAULT false,
+  whatsapp_sent_at TIMESTAMP WITH TIME ZONE,
+  whatsapp_message TEXT,
 
   -- Notas e observações
   notes TEXT,
@@ -110,6 +122,9 @@ CREATE INDEX IF NOT EXISTS idx_appointments_client_id ON appointments(client_id)
 CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
 CREATE INDEX IF NOT EXISTS idx_appointments_scheduled_date ON appointments(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_appointments_user_status ON appointments(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_appointments_payment_status ON appointments(payment_status);
+CREATE INDEX IF NOT EXISTS idx_appointments_last_edited_at ON appointments(last_edited_at);
+CREATE INDEX IF NOT EXISTS idx_appointments_whatsapp_sent ON appointments(whatsapp_sent);
 
 CREATE INDEX IF NOT EXISTS idx_appointment_services_appointment_id ON appointment_services(appointment_id);
 CREATE INDEX IF NOT EXISTS idx_appointment_services_service_id ON appointment_services(service_id);
@@ -118,6 +133,13 @@ CREATE INDEX IF NOT EXISTS idx_appointment_services_service_id ON appointment_se
 COMMENT ON TABLE appointments IS 'Tabela principal de agendamentos';
 COMMENT ON TABLE appointment_services IS 'Serviços realizados em cada agendamento';
 COMMENT ON COLUMN appointments.total_received IS 'Valor total efetivamente recebido no atendimento';
+COMMENT ON COLUMN appointments.payment_total_service IS 'Valor total do atendimento (soma de todos os serviços)';
+COMMENT ON COLUMN appointments.payment_status IS 'Status do pagamento: paid (pago), pending (pendente), partial (parcial)';
+COMMENT ON COLUMN appointments.last_edited_at IS 'Última vez que o agendamento foi editado';
+COMMENT ON COLUMN appointments.edited_by IS 'Usuário que fez a última edição';
+COMMENT ON COLUMN appointments.whatsapp_sent IS 'Indica se a mensagem do WhatsApp foi enviada';
+COMMENT ON COLUMN appointments.whatsapp_sent_at IS 'Quando a mensagem do WhatsApp foi enviada';
+COMMENT ON COLUMN appointments.whatsapp_message IS 'Conteúdo da última mensagem enviada por WhatsApp';
 COMMENT ON COLUMN appointment_services.quantity IS 'Quantidade do serviço realizado';
 COMMENT ON COLUMN appointment_services.unit_price IS 'Preço unitário praticado no atendimento';
 COMMENT ON COLUMN appointment_services.total_price IS 'Preço total do serviço (unit_price × quantity)';

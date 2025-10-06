@@ -213,6 +213,11 @@ export default function AppointmentsPage({ user, onBack }: AppointmentsPageProps
     if (!editingAppointment || !user?.id) return
 
     try {
+      // Se o status for alterado para "completed", considerar que o pagamento também foi realizado
+      const isStatusChangedToCompleted = editForm.status === 'completed' && editingAppointment.status !== 'completed'
+      const updatedPaymentStatus = isStatusChangedToCompleted ? 'paid' : editForm.payment_status
+      const updatedTotalReceived = isStatusChangedToCompleted ? editingAppointment.payment_total_service : editForm.total_received
+
       const { error } = await supabase
         .from('appointments')
         .update({
@@ -220,8 +225,8 @@ export default function AppointmentsPage({ user, onBack }: AppointmentsPageProps
           scheduled_date: editForm.scheduled_date || null,
           scheduled_time: editForm.scheduled_time || null,
           notes: editForm.notes || null,
-          payment_status: editForm.payment_status,
-          total_received: editForm.total_received,
+          payment_status: updatedPaymentStatus,
+          total_received: updatedTotalReceived,
           last_edited_at: new Date().toISOString(),
           edited_by: user.id
         })
@@ -504,12 +509,29 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                             )}
                           </div>
                           <div className="text-right sm:text-right">
-                            <div className="text-lg font-bold text-orange-600">
-                              R$ {(appointment.payment_total_service - appointment.total_received).toFixed(2)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Pendente
-                            </div>
+                            {appointment.status === 'completed' ? (
+                              <div className="text-sm font-semibold text-blue-600">
+                                atendimento realizado
+                              </div>
+                            ) : appointment.payment_status === 'paid' ? (
+                              <>
+                                <div className="text-lg font-bold text-green-600">
+                                  R$ 0,00
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Pendente
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-lg font-bold text-orange-600">
+                                  R$ {(appointment.payment_total_service - appointment.total_received).toFixed(2)}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  Pendente
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -661,7 +683,20 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                 </label>
                 <select
                   value={editForm.status}
-                  onChange={(e) => setEditForm({...editForm, status: e.target.value as any})}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as any
+                    // Se o status for alterado para "completed", automaticamente marcar como pago
+                    if (newStatus === 'completed') {
+                      setEditForm({
+                        ...editForm,
+                        status: newStatus,
+                        payment_status: 'paid',
+                        total_received: editingAppointment.payment_total_service
+                      })
+                    } else {
+                      setEditForm({...editForm, status: newStatus})
+                    }
+                  }}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900"
                 >
                   <option value="pending">⏳ Aguardando Confirmação</option>

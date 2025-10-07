@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, formatDuration } from '../lib/supabase'
 import NumericInput from './NumericInput'
 
 interface PriceCalculatorProps {
@@ -639,11 +639,19 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         }
       }
 
-      // 3. Calcular valores de pagamento
+      // 3. Calcular valores de pagamento e tempo total
       const totalServiceValue = useManualPrice && manualPrice ? 
         parseFloat(manualPrice.replace(',', '.')) : 
         calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
       const downPaymentPaid = parseFloat(downPaymentAmount || '0')
+
+      // Calcular tempo total do atendimento (soma da duração de todos os serviços)
+      const totalDurationMinutes = useManualPrice && manualPrice ? 
+        60 : // Valor padrão para atendimentos com preço diferenciado
+        calculatedPrices.services.reduce((total, service) => {
+          const serviceInfo = services.find(s => s.id === service.serviceId)
+          return total + (serviceInfo?.duration_minutes || 60) * service.quantity
+        }, 0)
 
       // Determinar status do pagamento
       let finalPaymentStatus: 'pending' | 'paid' | 'partial' = 'pending'
@@ -676,6 +684,9 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           payment_down_payment_paid: downPaymentPaid,
           payment_total_service: totalServiceValue,
           payment_status: finalPaymentStatus,
+
+          // Tempo total do atendimento
+          total_duration_minutes: totalDurationMinutes,
 
           notes: useManualPrice ? 
             `Agendamento criado via calculadora - Valor diferenciado: R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` : 
@@ -1447,6 +1458,20 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       }
                     </span>
                   </div>
+                  {/* Tempo Total do Atendimento */}
+                  {!useManualPrice && (
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="font-medium text-gray-600 text-xs sm:text-sm">
+                        ⏱️ Tempo Estimado:
+                      </span>
+                      <span className="text-sm sm:text-base font-semibold text-blue-600">
+                        {formatDuration(calculatedPrices.services.reduce((total, service) => {
+                          const serviceInfo = services.find(s => s.id === service.serviceId)
+                          return total + (serviceInfo?.duration_minutes || 60) * service.quantity
+                        }, 0))}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1578,6 +1603,12 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     <div><strong>💄 Serviços:</strong> {useManualPrice && manualPrice ? 'Valor diferenciado' : `${calculatedPrices.services.length} selecionado(s)`}</div>
                     <div><strong>📍 Local:</strong> {areas.find(a => a.id === selectedArea)?.name}</div>
                     <div><strong>💰 Total:</strong> {useManualPrice && manualPrice ? `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` : `R$ ${calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}`}</div>
+                    {!useManualPrice && (
+                      <div><strong>⏱️ Tempo Estimado:</strong> {formatDuration(calculatedPrices.services.reduce((total, service) => {
+                        const serviceInfo = services.find(s => s.id === service.serviceId)
+                        return total + (serviceInfo?.duration_minutes || 60) * service.quantity
+                      }, 0))}</div>
+                    )}
                     {parseFloat(downPaymentAmount || '0') > 0 && (
                       <>
                         <div><strong>💳 Entrada:</strong> R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</div>

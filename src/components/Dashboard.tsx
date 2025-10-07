@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, formatDuration } from '../lib/supabase'
 import { WhatsAppButton } from './WhatsAppButton'
 import { Settings } from './Settings'
 import { PriceCalculator } from './PriceCalculator'
@@ -191,6 +191,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         .from('appointments')
         .select(`
           *,
+          total_duration_minutes,
           clients (name, phone),
           appointment_services (
             quantity,
@@ -580,9 +581,14 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                     <span>🕐 {appointment.scheduled_date ? 
                       new Date(appointment.scheduled_date).toLocaleDateString('pt-BR') : 'Data não definida'
                     }{appointment.scheduled_time ? `, ${appointment.scheduled_time}` : ''}</span>
-                    <span className="font-semibold text-green-600">
-                      R$ {calculateAppointmentTotal(appointment).toFixed(2)}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      {appointment.total_duration_minutes && (
+                        <span className="text-blue-600">⏱️ {formatDuration(appointment.total_duration_minutes)}</span>
+                      )}
+                      <span className="font-semibold text-green-600">
+                        R$ {calculateAppointmentTotal(appointment).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))

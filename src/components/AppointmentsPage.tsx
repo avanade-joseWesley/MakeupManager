@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, formatDuration } from '../lib/supabase'
 import { Container } from './Container'
 
 interface AppointmentsPageProps {
@@ -20,6 +20,7 @@ interface Appointment {
   payment_down_payment_paid: number
   payment_total_service: number
   payment_status: 'pending' | 'paid' | 'partial'
+  total_duration_minutes: number
   notes: string | null
   client: any // Simplificar para any por enquanto
   service_area: any // Simplificar para any por enquanto
@@ -48,6 +49,25 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
     loadAppointments()
   }, [user])
 
+  // Função para garantir que o campo total_duration_minutes existe
+  const ensureTotalDurationField = async () => {
+    try {
+      // Tentar fazer uma query que usa o campo
+      const { data, error } = await supabase
+        .from('appointments')
+        .select('id, total_duration_minutes')
+        .limit(1)
+
+      if (error && error.message.includes('total_duration_minutes')) {
+        console.warn('Campo total_duration_minutes não encontrado no banco de dados')
+        console.warn('Por favor, execute a migração: database/add-total-duration-field.sql no Supabase Dashboard')
+        // Não bloquear o carregamento, apenas mostrar aviso
+      }
+    } catch (err) {
+      console.warn('Erro ao verificar campo total_duration_minutes:', err)
+    }
+  }
+
   // Função helper para verificar se agendamento está atrasado
   const isAppointmentOverdue = (appointment: any) => {
     if (!appointment.scheduled_date) return false
@@ -67,6 +87,9 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
     setError(null)
 
     try {
+      // Primeiro, garantir que a migração do campo total_duration_minutes foi executada
+      await ensureTotalDurationField()
+
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -80,6 +103,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
           payment_down_payment_paid,
           payment_total_service,
           payment_status,
+          total_duration_minutes,
           notes,
           client:clients(id, name, phone),
           service_area:service_areas(id, name),
@@ -499,6 +523,11 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                           <div className="text-sm text-gray-600 mb-1 sm:mb-0">
                             📅 {formatDate(appointment.scheduled_date)}
                             {appointment.scheduled_time && ` às ${formatTime(appointment.scheduled_time)}`}
+                            {appointment.total_duration_minutes !== undefined && appointment.total_duration_minutes !== null && (
+                              <span className="ml-2 text-blue-600 font-medium">
+                                ⏱️ {formatDuration(appointment.total_duration_minutes)}
+                              </span>
+                            )}
                             {appointment.appointment_address && (
                               <div className="flex items-center space-x-1 mt-1">
                                 <button

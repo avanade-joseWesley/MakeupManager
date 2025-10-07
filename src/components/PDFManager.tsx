@@ -15,13 +15,24 @@ interface PDFDocument {
   updated_at: string
 }
 
+interface Client {
+  id: string
+  name: string
+  phone: string
+  email?: string
+}
+
 export function PDFManager({ user }: PDFManagerProps) {
   const [pdfs, setPdfs] = useState<PDFDocument[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState('')
   const [error, setError] = useState('')
+  const [showClientSelector, setShowClientSelector] = useState(false)
+  const [selectedPdfForSharing, setSelectedPdfForSharing] = useState<PDFDocument | null>(null)
+  const [clientSearchTerm, setClientSearchTerm] = useState('')
 
   // Carregar PDFs do usuário
   const loadPDFs = async () => {
@@ -57,6 +68,25 @@ export function PDFManager({ user }: PDFManagerProps) {
     }
   }
 
+  // Carregar clientes do usuário
+  const loadClients = async () => {
+    if (!user?.id) return
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name, phone, email')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true })
+
+      if (error) throw error
+      setClients(data || [])
+    } catch (err) {
+      console.error('Erro ao carregar clientes:', err)
+      setError('Erro ao carregar clientes')
+    }
+  }
+
   // Upload de PDF
   const uploadPDF = async () => {
     if (!selectedFile || !user?.id) return
@@ -65,15 +95,15 @@ export function PDFManager({ user }: PDFManagerProps) {
       setUploading(true)
       setError('')
 
-      const fileExt = selectedFile.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      // Usar nome original do arquivo, mas adicionar timestamp para evitar conflitos
+      const fileName = selectedFile.name
       const filePath = `${user.id}/${fileName}`
 
       const { error: uploadError } = await supabase.storage
         .from('budgets')
         .upload(filePath, selectedFile, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Permite sobrescrever se o arquivo já existir
         })
 
       if (uploadError) throw uploadError
@@ -139,6 +169,41 @@ export function PDFManager({ user }: PDFManagerProps) {
     }
   }
 
+  // Abrir seletor de cliente para compartilhamento
+  const openClientSelector = (pdf: PDFDocument) => {
+    setSelectedPdfForSharing(pdf)
+    setShowClientSelector(true)
+  }
+
+  // Compartilhar com cliente selecionado
+  const shareWithClient = (client: Client) => {
+    if (selectedPdfForSharing) {
+      sharePDFViaWhatsApp(selectedPdfForSharing, client.phone)
+      setShowClientSelector(false)
+      setSelectedPdfForSharing(null)
+      setClientSearchTerm('')
+    }
+  }
+
+  // Compartilhar com número manual
+  const shareWithManualNumber = () => {
+    if (selectedPdfForSharing) {
+      const phone = prompt('Digite o número do WhatsApp (com DDD):')
+      if (phone) {
+        sharePDFViaWhatsApp(selectedPdfForSharing, phone)
+      }
+      setShowClientSelector(false)
+      setSelectedPdfForSharing(null)
+      setClientSearchTerm('')
+    }
+  }
+
+  // Filtrar clientes baseado no termo de pesquisa
+  const filteredClients = clients.filter(client =>
+    client.name.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+    client.phone.includes(clientSearchTerm)
+  )
+
   // Excluir PDF
   const deletePDF = async (pdf: PDFDocument) => {
     if (!confirm(`Tem certeza que deseja excluir "${pdf.name}"?`)) return
@@ -179,6 +244,7 @@ export function PDFManager({ user }: PDFManagerProps) {
 
   useEffect(() => {
     loadPDFs()
+    loadClients()
   }, [user?.id])
 
   return (
@@ -204,14 +270,25 @@ export function PDFManager({ user }: PDFManagerProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               📄 Selecionar Arquivo PDF
             </label>
+            <p className="text-xs text-gray-500 mb-2">
+              📏 Tamanho máximo: 50MB (ideal para portfólios com muitas páginas)
+            </p>
             <input
               type="file"
               accept=".pdf"
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (file) {
+                  // Verificar tamanho do arquivo (limite de 50MB)
+                  const maxSize = 50 * 1024 * 1024 // 50MB em bytes
+                  if (file.size > maxSize) {
+                    setError(`Arquivo muito grande! Tamanho máximo permitido: 50MB. Arquivo selecionado: ${formatFileSize(file.size)}`)
+                    return
+                  }
+
                   setSelectedFile(file)
                   setFileName(file.name)
+                  setError('') // Limpar erro anterior se houver
                 }
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -295,10 +372,7 @@ export function PDFManager({ user }: PDFManagerProps) {
                     </button>
 
                     <button
-                      onClick={() => {
-                        const phone = prompt('Digite o número do WhatsApp (com DDD):')
-                        if (phone) sharePDFViaWhatsApp(pdf, phone)
-                      }}
+                      onClick={() => openClientSelector(pdf)}
                       className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                       title="Compartilhar via WhatsApp"
                     >
@@ -319,6 +393,65 @@ export function PDFManager({ user }: PDFManagerProps) {
           </div>
         )}
       </div>
+
+      {/* Modal de seleção de cliente */}
+      {showClientSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-96 overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Selecionar Cliente</h3>
+
+            {/* Campo de pesquisa */}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="🔍 Pesquisar cliente por nome ou telefone..."
+                value={clientSearchTerm}
+                onChange={(e) => setClientSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                autoFocus
+              />
+            </div>
+
+            {filteredClients.length === 0 ? (
+              <p className="text-gray-500 mb-4">
+                {clients.length === 0 ? 'Nenhum cliente cadastrado' : 'Nenhum cliente encontrado'}
+              </p>
+            ) : (
+              <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                {filteredClients.map((client) => (
+                  <button
+                    key={client.id}
+                    onClick={() => shareWithClient(client)}
+                    className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="font-medium">{client.name}</div>
+                    <div className="text-sm text-gray-600">{client.phone}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={shareWithManualNumber}
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Digitar Número Manual
+              </button>
+              <button
+                onClick={() => {
+                  setShowClientSelector(false)
+                  setSelectedPdfForSharing(null)
+                  setClientSearchTerm('')
+                }}
+                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

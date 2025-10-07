@@ -5,6 +5,7 @@ import { Settings } from './Settings'
 import { PriceCalculator } from './PriceCalculator'
 import ClientsPage from './ClientsPage'
 import AppointmentsPage from './AppointmentsPage'
+import { PDFManager } from './PDFManager'
 import { Container } from './Container'
 
 interface DashboardProps {
@@ -15,7 +16,7 @@ interface DashboardProps {
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [message, setMessage] = useState('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments' | 'pdfs'>('dashboard')
   
   // Estado para filtros de agendamento
   const [appointmentFilters, setAppointmentFilters] = useState<{
@@ -334,6 +335,30 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     />
   }
 
+  if (currentView === 'pdfs') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-4">
+        <Container className="space-y-4">
+          <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white p-4 rounded-2xl shadow-xl">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCurrentView('dashboard')}
+                className="text-purple-100 hover:text-white transition-colors"
+              >
+                ← Voltar
+              </button>
+              <h1 className="text-xl font-bold">
+                📄 Documentos
+              </h1>
+              <div></div>
+            </div>
+          </div>
+          <PDFManager user={user} />
+        </Container>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-2">
       <Container className="space-y-3">
@@ -358,7 +383,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="grid grid-cols-3 gap-2 mb-3">
           <button
             onClick={() => setCurrentView('calculator')}
             className="bg-gradient-to-br from-green-400 to-green-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
@@ -374,6 +399,13 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             <div className="text-xs font-semibold">Clientes</div>
           </button>
           <button
+            onClick={() => setCurrentView('pdfs')}
+            className="bg-gradient-to-br from-purple-400 to-pink-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
+          >
+            <div className="text-2xl mb-1">📄</div>
+            <div className="text-xs font-semibold">Documentos</div>
+          </button>
+          <button
             onClick={() => setCurrentView('appointments')}
             className="bg-gradient-to-br from-orange-400 to-red-500 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
@@ -382,11 +414,12 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           </button>
           <button
             onClick={() => setCurrentView('settings')}
-            className="bg-gradient-to-br from-purple-400 to-purple-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
+            className="bg-gradient-to-br from-gray-400 to-gray-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
             <div className="text-2xl mb-1">⚙️</div>
             <div className="text-xs font-semibold">Config</div>
           </button>
+          <div></div> {/* Espaço vazio para manter o layout */}
         </div>
 
         {/* Cards de Status */}

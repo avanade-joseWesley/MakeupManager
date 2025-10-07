@@ -236,16 +236,56 @@ export function Settings({ user, onBack }: SettingsProps) {
   const removeServiceArea = async (id: string) => {
     setLoading(true)
     try {
+      console.log('Tentando remover região com ID:', id)
+
+      // Verificar se a região está sendo usada em agendamentos
+      const { data: appointmentsUsingArea, error: checkError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('service_area_id', id)
+        .limit(1)
+
+      if (checkError) {
+        console.error('Erro ao verificar uso da região:', checkError)
+        throw checkError
+      }
+
+      if (appointmentsUsingArea && appointmentsUsingArea.length > 0) {
+        alert('❌ Não é possível excluir esta região porque ela está sendo usada em agendamentos existentes. Cancele ou finalize os agendamentos nesta região antes de excluí-la.')
+        return
+      }
+
+      // Verificar se a região está sendo usada em preços regionais
+      const { data: regionalPricesUsingArea, error: regionalCheckError } = await supabase
+        .from('service_regional_prices')
+        .select('id')
+        .eq('service_area_id', id)
+        .limit(1)
+
+      if (regionalCheckError) {
+        console.error('Erro ao verificar uso da região em preços:', regionalCheckError)
+        throw regionalCheckError
+      }
+
+      if (regionalPricesUsingArea && regionalPricesUsingArea.length > 0) {
+        alert('❌ Não é possível excluir esta região porque ela tem preços regionais configurados. Remova os preços regionais primeiro.')
+        return
+      }
+
       const { error } = await supabase
         .from('service_areas')
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro detalhado ao remover região:', error)
+        throw error
+      }
+      console.log('Região removida com sucesso')
       loadUserData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing service area:', error)
-      alert('Erro ao remover região')
+      alert(`Erro ao remover região: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -346,16 +386,21 @@ export function Settings({ user, onBack }: SettingsProps) {
   const removeRegionalPrice = async (id: string) => {
     setLoading(true)
     try {
+      console.log('Tentando remover preço regional com ID:', id)
       const { error } = await supabase
         .from('service_regional_prices')
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro detalhado ao remover preço regional:', error)
+        throw error
+      }
+      console.log('Preço regional removido com sucesso')
       loadUserData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing regional price:', error)
-      alert('Erro ao remover preço regional')
+      alert(`Erro ao remover preço regional: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -365,16 +410,68 @@ export function Settings({ user, onBack }: SettingsProps) {
     if (!window.confirm('Tem certeza que deseja excluir este serviço? Essa ação não pode ser desfeita.')) return
     setLoading(true)
     try {
+      console.log('Tentando remover serviço com ID:', id)
+
+      // Verificar se o serviço está sendo usado em agendamentos FUTUROS
+      const today = new Date().toISOString().split('T')[0] // Data de hoje no formato YYYY-MM-DD
+
+      const { data: futureAppointmentsUsingService, error: checkError } = await supabase
+        .from('appointment_services')
+        .select(`
+          appointment_id,
+          appointments!inner(scheduled_date)
+        `)
+        .eq('service_id', id)
+        .gte('appointments.scheduled_date', today) // Apenas agendamentos futuros ou hoje
+        .limit(1)
+
+      if (checkError) {
+        console.error('Erro ao verificar uso futuro do serviço:', checkError)
+        throw checkError
+      }
+
+      if (futureAppointmentsUsingService && futureAppointmentsUsingService.length > 0) {
+        alert('❌ Não é possível excluir este serviço porque ele está agendado para datas futuras. Cancele os agendamentos futuros que usam este serviço antes de excluí-lo.')
+        return
+      }
+
+      // Verificar se há agendamentos passados (apenas para informar ao usuário)
+      const { data: pastAppointmentsUsingService, error: pastCheckError } = await supabase
+        .from('appointment_services')
+        .select(`
+          appointment_id,
+          appointments!inner(scheduled_date)
+        `)
+        .eq('service_id', id)
+        .lt('appointments.scheduled_date', today) // Apenas agendamentos passados
+
+      if (pastCheckError) {
+        console.error('Erro ao verificar uso passado do serviço:', pastCheckError)
+        // Não bloquear por erro, apenas logar
+      }
+
+      // Se há agendamentos passados, confirmar se o usuário quer mesmo excluir
+      if (pastAppointmentsUsingService && pastAppointmentsUsingService.length > 0) {
+        const confirmMessage = `⚠️ Este serviço foi usado em ${pastAppointmentsUsingService.length} agendamento(s) passado(s).\n\nIsso não afetará o histórico, mas o serviço será removido do catálogo atual.\n\nDeseja continuar?`
+        if (!window.confirm(confirmMessage)) {
+          return
+        }
+      }
+
       const { error } = await supabase
         .from('services')
         .delete()
         .eq('id', id)
 
-      if (error) throw error
+      if (error) {
+        console.error('Erro detalhado ao remover serviço:', error)
+        throw error
+      }
+      console.log('Serviço removido com sucesso')
       loadUserData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing service:', error)
-      alert('Erro ao remover serviço')
+      alert(`Erro ao remover serviço: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -384,24 +481,97 @@ export function Settings({ user, onBack }: SettingsProps) {
     if (!window.confirm('Tem certeza que deseja excluir esta categoria e todos os serviços dentro dela? Essa ação não pode ser desfeita.')) return
     setLoading(true)
     try {
+      console.log('Tentando remover categoria com ID:', id)
+
+      // Primeiro, verificar se algum serviço desta categoria está sendo usado em agendamentos FUTUROS
+      const today = new Date().toISOString().split('T')[0] // Data de hoje no formato YYYY-MM-DD
+
+      const { data: servicesInCategory, error: servicesError } = await supabase
+        .from('services')
+        .select('id')
+        .eq('category_id', id)
+
+      if (servicesError) {
+        console.error('Erro ao buscar serviços da categoria:', servicesError)
+        throw servicesError
+      }
+
+      if (servicesInCategory && servicesInCategory.length > 0) {
+        // Verificar se algum desses serviços está sendo usado em agendamentos FUTUROS
+        const serviceIds = servicesInCategory.map(s => s.id)
+        const { data: futureAppointmentsUsingServices, error: checkError } = await supabase
+          .from('appointment_services')
+          .select(`
+            appointment_id,
+            appointments!inner(scheduled_date)
+          `)
+          .in('service_id', serviceIds)
+          .gte('appointments.scheduled_date', today) // Apenas agendamentos futuros ou hoje
+          .limit(1)
+
+        if (checkError) {
+          console.error('Erro ao verificar uso futuro dos serviços:', checkError)
+          throw checkError
+        }
+
+        if (futureAppointmentsUsingServices && futureAppointmentsUsingServices.length > 0) {
+          alert('❌ Não é possível excluir esta categoria porque um ou mais serviços dela estão agendados para datas futuras. Cancele os agendamentos futuros que usam serviços desta categoria antes de excluí-la.')
+          return
+        }
+
+        // Verificar se há agendamentos passados (apenas para informar ao usuário)
+        const { data: pastAppointmentsUsingServices, error: pastCheckError } = await supabase
+          .from('appointment_services')
+          .select(`
+            appointment_id,
+            appointments!inner(scheduled_date)
+          `)
+          .in('service_id', serviceIds)
+          .lt('appointments.scheduled_date', today) // Apenas agendamentos passados
+
+        if (pastCheckError) {
+          console.error('Erro ao verificar uso passado dos serviços:', pastCheckError)
+          // Não bloquear por erro, apenas logar
+        }
+
+        // Se há agendamentos passados, confirmar se o usuário quer mesmo excluir
+        if (pastAppointmentsUsingServices && pastAppointmentsUsingServices.length > 0) {
+          const confirmMessage = `⚠️ Serviços desta categoria foram usados em ${pastAppointmentsUsingServices.length} agendamento(s) passado(s).\n\nIsso não afetará o histórico, mas todos os serviços serão removidos do catálogo atual.\n\nDeseja continuar?`
+          if (!window.confirm(confirmMessage)) {
+            return
+          }
+        }
+      }
+
       // delete services belonging to the category first
+      console.log('Removendo serviços da categoria...')
       const { error: err1 } = await supabase
         .from('services')
         .delete()
         .eq('category_id', id)
 
-      if (err1) throw err1
+      if (err1) {
+        console.error('Erro ao remover serviços da categoria:', err1)
+        throw err1
+      }
+      console.log('Serviços da categoria removidos com sucesso')
 
+      console.log('Removendo categoria...')
       const { error: err2 } = await supabase
         .from('service_categories')
         .delete()
         .eq('id', id)
 
-      if (err2) throw err2
+      if (err2) {
+        console.error('Erro ao remover categoria:', err2)
+        throw err2
+      }
+      console.log('Categoria removida com sucesso')
+
       loadUserData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing category:', error)
-      alert('Erro ao remover categoria')
+      alert(`Erro ao remover categoria: ${error.message}`)
     } finally {
       setLoading(false)
     }

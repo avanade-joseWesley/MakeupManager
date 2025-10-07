@@ -442,7 +442,7 @@ export default function Clients({ user }: { user?: any }) {
                           </button>
                         </div>
 
-                        <div className="flex space-y-2">
+                        <div className="space-y-2">
                           <a
                             className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium text-sm bg-green-50 hover:bg-green-100 px-3 py-1 rounded-lg transition-all duration-200 break-all"
                             href={`https://wa.me/55${String(c.phone).replace(/\D/g, '')}`}

@@ -346,18 +346,18 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
     const lines: string[] = []
-    lines.push('🌟 *ORÇAMENTO PERSONALIZADO* 🌟', '')
-    lines.push(`👤 *Cliente:* ${clientName}`)
-    lines.push(`📱 *Telefone:* ${clientPhone}`)
+    lines.push('ORÇAMENTO PERSONALIZADO', '')
+    lines.push(`Cliente: ${clientName}`)
+    lines.push(`Telefone: ${clientPhone}`)
     lines.push('')
 
     if (useManualPrice && manualPrice) {
       const manualValue = parseFloat(manualPrice.replace(',', '.')) || 0
-      lines.push('💄 *Atendimento Personalizado*')
+      lines.push('ATENDIMENTO PERSONALIZADO')
       lines.push(`• Valor definido especialmente para este atendimento: ${formatCurrency(manualValue)}`)
       lines.push('')
     } else {
-      lines.push('💄 *Serviços Solicitados*')
+      lines.push('SERVIÇOS SOLICITADOS')
 
       if (includeTravelFee) {
         // Quando taxa de deslocamento está incluída, não detalhar preços individuais
@@ -400,7 +400,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       }
 
       lines.push('')
-      lines.push(`📍 *Local do atendimento:* ${area?.name || 'Não informado'}`)
+      lines.push(`Local do atendimento: ${area?.name || 'Não informado'}`)
       lines.push('')
     }
 
@@ -410,7 +410,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       ? parseFloat(manualPrice.replace(',', '.')) || 0
       : servicesTotal + (travelFeeValue || 0)
 
-    lines.push('💰 *Detalhes do Orçamento*')
+    lines.push('DETALHES DO ORÇAMENTO')
 
     if (useManualPrice && manualPrice) {
       lines.push(`• Valor personalizado do atendimento: ${formatCurrency(finalTotal)}`)
@@ -436,14 +436,14 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     }, 0)
 
     lines.push('')
-    lines.push(`⏰ *Duração estimada:* ${useManualPrice && manualPrice ? 'A combinar' : formatDuration(totalDurationMinutes)}`)
-    lines.push('✨ Orçamento válido por 7 dias')
-    lines.push('📞 Responda esta mensagem para confirmar sua data!')
+    lines.push(`Duração estimada: ${useManualPrice && manualPrice ? 'A combinar' : formatDuration(totalDurationMinutes)}`)
+    lines.push('Orçamento válido por 7 dias')
+    lines.push('Responda esta mensagem para confirmar sua data!')
 
     // Adicionar PDFs anexados se selecionados
     const attachmentLines: string[] = []
     if (selectedPdfForAttachment.length > 0) {
-      attachmentLines.push('', '*📄 Documentos anexados:*')
+      attachmentLines.push('', '*Documentos anexados:*')
       for (const pdfId of selectedPdfForAttachment) {
         const selectedPdf = availablePdfs.find(pdf => pdf.id === pdfId)
         if (selectedPdf) {
@@ -461,7 +461,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           }
         }
       }
-      attachmentLines.push('💄 Documentos relacionados ao orçamento enviado acima.')
+      attachmentLines.push('Documentos relacionados ao orçamento enviado acima.')
     }
 
     const message = [...lines, ...attachmentLines].join('\n')
@@ -541,19 +541,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       if (servicesError) throw servicesError
 
       // 2. Enviar mensagem pelo WhatsApp
-      // Codificar apenas espaços e quebras de linha, preservando emojis
-      const encodeMessageForWhatsApp = (message: string) => {
-        return message
-          .replace(/ /g, '%20')      // Espaços
-          .replace(/\n/g, '%0A')     // Quebras de linha
-          .replace(/\r/g, '')        // Remover carriage returns
-          .replace(/&/g, '%26')      // E comercial
-          .replace(/\?/g, '%3F')     // Interrogação
-          .replace(/#/g, '%23')      // Hash
-          .replace(/%/g, '%25')      // Porcentagem
-      }
-      
-      const encodedMessage = encodeMessageForWhatsApp(whatsappMessage)
+      const encodedMessage = whatsappMessage.replace(/\n/g, '%0A')
       const cleanedNumber = clientPhone.replace(/\D/g, '')
       const whatsappNumber = cleanedNumber.startsWith('55') ? cleanedNumber : `55${cleanedNumber}`
       const webWhatsappUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`

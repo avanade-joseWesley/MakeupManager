@@ -84,6 +84,15 @@ export function Settings({ user, onBack }: SettingsProps) {
     category_id: ''
   })
 
+  // Edit service state
+  const [editingService, setEditingService] = useState<string | null>(null)
+  const [editServiceData, setEditServiceData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    duration_minutes: ''
+  })
+
   // Regional prices state
   const [regionalPrices, setRegionalPrices] = useState<ServiceRegionalPrice[]>([])
   const [selectedService, setSelectedService] = useState('')
@@ -104,6 +113,10 @@ export function Settings({ user, onBack }: SettingsProps) {
   const [newServicePriceValid, setNewServicePriceValid] = useState<boolean>(true)
   const [newServiceDurationValid, setNewServiceDurationValid] = useState<boolean>(true)
   const [regionalPriceValid, setRegionalPriceValid] = useState<boolean>(true)
+
+  // Edit service validation states
+  const [editServicePriceValid, setEditServicePriceValid] = useState<boolean>(true)
+  const [editServiceDurationValid, setEditServiceDurationValid] = useState<boolean>(true)
 
   useEffect(() => {
     loadUserData()
@@ -378,6 +391,69 @@ export function Settings({ user, onBack }: SettingsProps) {
     } catch (error) {
       console.error('Error adding regional price:', error)
       alert('Erro ao adicionar preço regional')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const startEditingService = (service: Service) => {
+    setEditingService(service.id)
+    setEditServiceData({
+      name: service.name,
+      description: service.description || '',
+      price: service.price.toString(),
+      duration_minutes: service.duration_minutes.toString()
+    })
+    setEditServicePriceValid(true)
+    setEditServiceDurationValid(true)
+  }
+
+  const cancelEditingService = () => {
+    setEditingService(null)
+    setEditServiceData({
+      name: '',
+      description: '',
+      price: '',
+      duration_minutes: ''
+    })
+  }
+
+  const saveServiceEdit = async () => {
+    if (!editingService) return
+    if (!editServicePriceValid || !editServiceDurationValid) {
+      alert('Corrija os valores inválidos antes de salvar.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const price = parseFloat(editServiceData.price.replace(',', '.')) || 0
+      const duration_minutes = parseInt(editServiceData.duration_minutes, 10) || 60
+
+      const { error } = await supabase
+        .from('services')
+        .update({
+          name: editServiceData.name,
+          description: editServiceData.description,
+          price,
+          duration_minutes
+        })
+        .eq('id', editingService)
+
+      if (error) throw error
+
+      setEditingService(null)
+      setEditServiceData({
+        name: '',
+        description: '',
+        price: '',
+        duration_minutes: ''
+      })
+      loadUserData()
+      alert('Serviço atualizado com sucesso!')
+    } catch (error: any) {
+      console.error('Error updating service:', error)
+      alert(`Erro ao atualizar serviço: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -1041,16 +1117,125 @@ export function Settings({ user, onBack }: SettingsProps) {
                       {category.services && category.services.length > 0 ? (
                         <div className="space-y-2">
                           {category.services.map((service) => (
-                            <div key={service.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                              <div>
-                                <div className="font-medium text-gray-800">{service.name}</div>
-                                <div className="text-sm text-gray-600">
-                                  R$ {service.price.toFixed(2)} • {service.duration_minutes}min
+                            <div key={service.id} className="p-3 bg-gray-50 rounded-lg">
+                              {editingService === service.id ? (
+                                // Edit mode
+                                <div className="space-y-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Nome do Serviço
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={editServiceData.name}
+                                      onChange={(e) => setEditServiceData({...editServiceData, name: e.target.value})}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                                    />
+                                  </div>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Descrição
+                                    </label>
+                                    <textarea
+                                      value={editServiceData.description}
+                                      onChange={(e) => setEditServiceData({...editServiceData, description: e.target.value})}
+                                      rows={2}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm resize-none"
+                                      placeholder="Descrição detalhada do serviço..."
+                                    />
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Preço (R$)
+                                      </label>
+                                      <NumericInput
+                                        value={editServiceData.price}
+                                        onChange={(value) => setEditServiceData({...editServiceData, price: value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                                        decimalPlaces={2}
+                                        allowComma={true}
+                                        min={0}
+                                        formatCurrency={true}
+                                        currency={'BRL'}
+                                        locale={'pt-BR'}
+                                        onValidate={(valid) => setEditServicePriceValid(valid)}
+                                      />
+                                      {!editServicePriceValid && (
+                                        <p className="text-xs text-red-600 mt-1">Preço inválido.</p>
+                                      )}
+                                    </div>
+                                    
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Duração (min)
+                                      </label>
+                                      <NumericInput
+                                        value={editServiceData.duration_minutes}
+                                        onChange={(value) => setEditServiceData({...editServiceData, duration_minutes: value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                                        decimalPlaces={null}
+                                        allowComma={false}
+                                        min={15}
+                                        onValidate={(valid) => setEditServiceDurationValid(valid)}
+                                      />
+                                      {!editServiceDurationValid && (
+                                        <p className="text-xs text-red-600 mt-1">Duração inválida.</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex gap-2 pt-2">
+                                    <button
+                                      onClick={saveServiceEdit}
+                                      disabled={loading || !editServicePriceValid || !editServiceDurationValid}
+                                      className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded disabled:opacity-50"
+                                    >
+                                      {loading ? 'Salvando...' : '💾 Salvar'}
+                                    </button>
+                                    <button
+                                      onClick={cancelEditingService}
+                                      disabled={loading}
+                                      className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded disabled:opacity-50"
+                                    >
+                                      Cancelar
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="flex flex-col gap-2">
-                                <button onClick={() => removeService(service.id)} className="text-sm text-red-600">Excluir</button>
-                              </div>
+                              ) : (
+                                // View mode
+                                <div>
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="font-medium text-gray-800">{service.name}</div>
+                                      {service.description && (
+                                        <div className="text-sm text-gray-600 mt-1 leading-relaxed">
+                                          📝 {service.description}
+                                        </div>
+                                      )}
+                                      <div className="text-sm text-gray-600 mt-1">
+                                        💰 R$ {service.price.toFixed(2)} • ⏱️ {service.duration_minutes}min
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1 ml-3">
+                                      <button
+                                        onClick={() => startEditingService(service)}
+                                        className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded"
+                                      >
+                                        ✏️ Editar
+                                      </button>
+                                      <button
+                                        onClick={() => removeService(service.id)}
+                                        className="text-xs text-red-600 hover:text-red-800 px-2 py-1 bg-red-50 hover:bg-red-100 rounded"
+                                      >
+                                        🗑️ Excluir
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

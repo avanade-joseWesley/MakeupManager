@@ -346,19 +346,41 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     const formatCurrency = (value: number) =>
       value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+    // Carregar informações do perfil do usuário
+    let userProfile = null
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (profileData) {
+        userProfile = profileData
+      }
+    } catch (error) {
+      console.warn('Erro ao carregar perfil do usuário:', error)
+    }
+
     const lines: string[] = []
-    lines.push('ORÇAMENTO PERSONALIZADO', '')
-    lines.push(`Cliente: ${clientName}`)
+    lines.push('💄 *ORÇAMENTO PERSONALIZADO*')
+    lines.push('✨ Produção de Beleza Profissional')
+    lines.push('')
+
+    // Informações do cliente
+    lines.push('👤 *CLIENTE*')
+    lines.push(`Nome: ${clientName}`)
     lines.push(`Telefone: ${clientPhone}`)
     lines.push('')
 
     if (useManualPrice && manualPrice) {
       const manualValue = parseFloat(manualPrice.replace(',', '.')) || 0
-      lines.push('ATENDIMENTO PERSONALIZADO')
-      lines.push(`• Valor definido especialmente para este atendimento: ${formatCurrency(manualValue)}`)
+      lines.push('💰 *ATENDIMENTO PERSONALIZADO*')
+      lines.push(`Valor definido especialmente: *R$ ${manualValue.toFixed(2)}*`)
+      lines.push('• Ajustado conforme necessidades específicas do evento.')
       lines.push('')
     } else {
-      lines.push('SERVIÇOS SOLICITADOS')
+      lines.push('💄 *SERVIÇOS SOLICITADOS*')
 
       // Não detalhar preços individuais dos serviços em nenhum caso
       calculatedPrices.services.forEach((service, index) => {
@@ -374,12 +396,12 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
         // Adicionar descrição se existir, logo após o nome do serviço
         if (serviceInfo?.description && serviceInfo.description.trim() !== '') {
-          lines.push(`   📝 ${serviceInfo.description.trim()}`)
+          lines.push(`   ${serviceInfo.description.trim()}`)
         }
       })
 
       lines.push('')
-      lines.push(`Local do atendimento: ${area?.name || 'Não informado'}`)
+      lines.push(`📍 *LOCAL DO ATENDIMENTO:* ${area?.name || 'Não informado'}`)
       lines.push('')
     }
 
@@ -389,20 +411,20 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       ? parseFloat(manualPrice.replace(',', '.')) || 0
       : servicesTotal + (travelFeeValue || 0)
 
-    lines.push('DETALHES DO ORÇAMENTO')
+    lines.push('💰 *DETALHES DO ORÇAMENTO*')
 
     if (useManualPrice && manualPrice) {
-      lines.push(`• Valor personalizado do atendimento: ${formatCurrency(finalTotal)}`)
+      lines.push(`• Valor personalizado do atendimento: *R$ ${finalTotal.toFixed(2)}*`)
       lines.push('• Ajustado conforme necessidades específicas do evento.')
     } else {
       // lines.push(`• Subtotal dos serviços: ${formatCurrency(servicesTotal)}`)
       if (travelFeeValue && travelFeeValue > 0) {
-        lines.push(`• *Total geral*: ${formatCurrency(finalTotal)} (inclui taxa de deslocamento)`)
+        lines.push(`• *Total geral*: *R$ ${finalTotal.toFixed(2)}* (inclui taxa de deslocamento)`)
       } else if (!includeTravelFee && area && area.travel_fee > 0 && !hasAnyRegionalPrice) {
         // Quando taxa não está incluída, informar o desconto
-        lines.push(`• *Total geral*: ${formatCurrency(finalTotal)} (taxa de deslocamento foi descontada - R$ ${formatCurrency(area.travel_fee)})`)
+        lines.push(`• *Total geral*: *R$ ${finalTotal.toFixed(2)}* (taxa de deslocamento foi descontada - R$ ${area.travel_fee.toFixed(2)})`)
       } else {
-        lines.push(`• *Total geral*: ${formatCurrency(finalTotal)}`)
+        lines.push(`• *Total geral*: *R$ ${finalTotal.toFixed(2)}*`)
       }
 
       if (hasAnyRegionalPrice) {
@@ -416,9 +438,22 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     }, 0)
 
     lines.push('')
-    lines.push(`Duração estimada: ${useManualPrice && manualPrice ? 'A combinar' : formatDuration(totalDurationMinutes)}`)
-    lines.push('Orçamento válido por 7 dias')
-    lines.push('Responda esta mensagem para confirmar sua data!')
+    lines.push(`⏱️ *Duração estimada:* ${useManualPrice && manualPrice ? 'A combinar' : formatDuration(totalDurationMinutes)}`)
+    lines.push('📅 *Orçamento válido por 7 dias*')
+    lines.push('💬 *Responda esta mensagem para confirmar sua data!*')
+
+    // Adicionar redes sociais se existirem
+    const socialLines: string[] = []
+    if (userProfile && (userProfile.instagram || userProfile.full_name)) {
+      socialLines.push('')
+      socialLines.push('📱 *SIGA-ME NAS REDES SOCIAIS*')
+      if (userProfile.instagram) {
+        socialLines.push(`📸 Instagram: https://instagram.com/${userProfile.instagram.replace('@', '')}`)
+      }
+      if (userProfile.full_name) {
+        socialLines.push(`💄 ${userProfile.full_name}`)
+      }
+    }
 
     // Adicionar PDFs anexados se selecionados
     const attachmentLines: string[] = []
@@ -444,7 +479,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       attachmentLines.push('Documentos relacionados ao orçamento enviado acima.')
     }
 
-    const message = [...lines, ...attachmentLines].join('\n')
+    const message = [...lines, ...socialLines, ...attachmentLines].join('\n')
 
     setWhatsappMessage(message)
     setShowWhatsAppModal(true)

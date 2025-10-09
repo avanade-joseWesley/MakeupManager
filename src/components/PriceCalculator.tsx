@@ -176,6 +176,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         .select(`
           id,
           name,
+          description,
           price,
           duration_minutes,
           service_categories!inner(name)
@@ -359,45 +360,23 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     } else {
       lines.push('SERVIÇOS SOLICITADOS')
 
-      if (includeTravelFee) {
-        // Quando taxa de deslocamento está incluída, não detalhar preços individuais
-        calculatedPrices.services.forEach((service, index) => {
-          const serviceInfo = services.find(s => s.id === service.serviceId)
-          const regionalPrice = regionalPrices.find(
-            rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
-          )
+      // Não detalhar preços individuais dos serviços em nenhum caso
+      calculatedPrices.services.forEach((service, index) => {
+        const serviceInfo = services.find(s => s.id === service.serviceId)
 
-          const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x)`
-          lines.push(serviceLine)
+        // DEBUG: Verificar dados do serviço
+        console.log('🔍 Serviço encontrado:', serviceInfo)
+        console.log('📝 Descrição:', serviceInfo?.description)
+        console.log('✅ Tem descrição válida:', !!(serviceInfo?.description && serviceInfo.description.trim() !== ''))
 
-          // Adicionar descrição se existir
-          if (serviceInfo?.description) {
-            lines.push(`   • ${serviceInfo.description}`)
-          }
-        })
-      } else {
-        // Quando taxa não está incluída, mostrar preços individuais
-        calculatedPrices.services.forEach((service, index) => {
-          const serviceInfo = services.find(s => s.id === service.serviceId)
-          const regionalPrice = regionalPrices.find(
-            rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
-          )
-          const unitPrice = regionalPrice ? regionalPrice.price : service.unitPrice
-          const totalPrice = unitPrice * service.quantity
+        const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x)`
+        lines.push(serviceLine)
 
-          const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x)`
-          lines.push(`${serviceLine} — ${formatCurrency(totalPrice)}`)
-
-          // Adicionar descrição se existir
-          if (serviceInfo?.description) {
-            lines.push(`   • ${serviceInfo.description}`)
-          }
-
-          if (!regionalPrice) {
-            lines.push(`   • Preço unitário: ${formatCurrency(unitPrice)}`)
-          }
-        })
-      }
+        // Adicionar descrição se existir, logo após o nome do serviço
+        if (serviceInfo?.description && serviceInfo.description.trim() !== '') {
+          lines.push(`   📝 ${serviceInfo.description.trim()}`)
+        }
+      })
 
       lines.push('')
       lines.push(`Local do atendimento: ${area?.name || 'Não informado'}`)
@@ -416,14 +395,15 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       lines.push(`• Valor personalizado do atendimento: ${formatCurrency(finalTotal)}`)
       lines.push('• Ajustado conforme necessidades específicas do evento.')
     } else {
-      lines.push(`• Subtotal dos serviços: ${formatCurrency(servicesTotal)}`)
+      // lines.push(`• Subtotal dos serviços: ${formatCurrency(servicesTotal)}`)
       if (travelFeeValue && travelFeeValue > 0) {
-        lines.push(`• Taxa de deslocamento: ${formatCurrency(travelFeeValue)}`)
+        lines.push(`• *Total geral*: ${formatCurrency(finalTotal)} (inclui taxa de deslocamento)`)
       } else if (!includeTravelFee && area && area.travel_fee > 0 && !hasAnyRegionalPrice) {
         // Quando taxa não está incluída, informar o desconto
-        lines.push(`• Desconto na taxa de deslocamento: ${formatCurrency(area.travel_fee)}`)
+        lines.push(`• *Total geral*: ${formatCurrency(finalTotal)} (taxa de deslocamento foi descontada - R$ ${formatCurrency(area.travel_fee)})`)
+      } else {
+        lines.push(`• *Total geral*: ${formatCurrency(finalTotal)}`)
       }
-      lines.push(`• *Total geral*: ${formatCurrency(finalTotal)}`)
 
       if (hasAnyRegionalPrice) {
         lines.push('• Preços regionais já incluem deslocamento e materiais extras.')

@@ -51,6 +51,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   const [appointmentAddress, setAppointmentAddress] = useState('')
   const [appointmentDate, setAppointmentDate] = useState('')
   const [appointmentTime, setAppointmentTime] = useState('')
+  const [appointmentHour, setAppointmentHour] = useState('')
+  const [appointmentMinute, setAppointmentMinute] = useState('')
   const [isAppointmentConfirmed, setIsAppointmentConfirmed] = useState(false)
 
   // Estados de pagamento
@@ -277,7 +279,28 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     }
   }, [isAppointmentConfirmed, calculatedPrices, selectedArea, areas, regionalPrices, includeTravelFee, useManualPrice, manualPrice])
 
-  // Usar os valores calculados diretamente, sem atualizar o estado
+  // Sincronizar hora e minuto com appointmentTime
+  useEffect(() => {
+    if (appointmentTime) {
+      const [hour, minute] = appointmentTime.split(':')
+      setAppointmentHour(hour || '')
+      setAppointmentMinute(minute || '')
+    } else {
+      setAppointmentHour('')
+      setAppointmentMinute('')
+    }
+  }, [appointmentTime])
+
+  // Atualizar appointmentTime quando hora ou minuto mudam
+  useEffect(() => {
+    if (appointmentHour && appointmentMinute) {
+      setAppointmentTime(`${appointmentHour}:${appointmentMinute}`)
+    } else if (appointmentHour) {
+      setAppointmentTime(`${appointmentHour}:00`)
+    } else {
+      setAppointmentTime('')
+    }
+  }, [appointmentHour, appointmentMinute])
 
   const clearFields = () => {
     setClientName('')
@@ -290,6 +313,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     setAppointmentAddress('')
     setAppointmentDate('')
     setAppointmentTime('')
+    setAppointmentHour('')
+    setAppointmentMinute('')
     setIsAppointmentConfirmed(false)
     setDownPaymentAmount('0')
     setPaymentStatus('pending')
@@ -1629,12 +1654,34 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                         <span className="mr-1 sm:mr-2">⏰</span>
                         Horário *
                       </label>
-                      <input
-                        type="time"
-                        value={appointmentTime}
-                        onChange={(e) => setAppointmentTime(e.target.value)}
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
-                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={appointmentHour}
+                          onChange={(e) => setAppointmentHour(e.target.value)}
+                          className="px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
+                        >
+                          <option value="">Hora</option>
+                          {Array.from({ length: 24 }, (_, i) => {
+                            const hour = i.toString().padStart(2, '0')
+                            return (
+                              <option key={hour} value={hour}>
+                                {hour}
+                              </option>
+                            )
+                          })}
+                        </select>
+                        <select
+                          value={appointmentMinute}
+                          onChange={(e) => setAppointmentMinute(e.target.value)}
+                          className="px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
+                        >
+                          <option value="">Min</option>
+                          <option value="00">00</option>
+                          <option value="15">15</option>
+                          <option value="30">30</option>
+                          <option value="45">45</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -1688,6 +1735,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     setAppointmentAddress('')
                     setAppointmentDate('')
                     setAppointmentTime('')
+                    setAppointmentHour('')
+                    setAppointmentMinute('')
                     setIsAppointmentConfirmed(false)
                     setDownPaymentAmount('0')
                     setPaymentStatus('pending')

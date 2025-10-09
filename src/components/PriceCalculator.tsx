@@ -541,7 +541,19 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       if (servicesError) throw servicesError
 
       // 2. Enviar mensagem pelo WhatsApp
-      const encodedMessage = encodeURIComponent(whatsappMessage)
+      // Codificar apenas espaços e quebras de linha, preservando emojis
+      const encodeMessageForWhatsApp = (message: string) => {
+        return message
+          .replace(/ /g, '%20')      // Espaços
+          .replace(/\n/g, '%0A')     // Quebras de linha
+          .replace(/\r/g, '')        // Remover carriage returns
+          .replace(/&/g, '%26')      // E comercial
+          .replace(/\?/g, '%3F')     // Interrogação
+          .replace(/#/g, '%23')      // Hash
+          .replace(/%/g, '%25')      // Porcentagem
+      }
+      
+      const encodedMessage = encodeMessageForWhatsApp(whatsappMessage)
       const cleanedNumber = clientPhone.replace(/\D/g, '')
       const whatsappNumber = cleanedNumber.startsWith('55') ? cleanedNumber : `55${cleanedNumber}`
       const webWhatsappUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`

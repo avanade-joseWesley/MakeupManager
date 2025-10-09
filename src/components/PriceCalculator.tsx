@@ -12,6 +12,7 @@ interface Service {
   price: number
   duration_minutes: number
   category_name: string
+  description?: string
 }
 
 interface ServiceArea {
@@ -316,71 +317,108 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
     )
 
-    // Construir mensagem
-    let message = `🌟 *ORÇAMENTO PERSONALIZADO* 🌟\n\n`
-    message += `👤 *Cliente:* ${clientName}\n`
-    message += `📱 *Telefone:* ${clientPhone}\n\n`
+    const formatCurrency = (value: number) =>
+      value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+    const lines: string[] = []
+    lines.push('🌟 *ORÇAMENTO PERSONALIZADO* 🌟', '')
+    lines.push(`👤 *Cliente:* ${clientName}`)
+    lines.push(`📱 *Telefone:* ${clientPhone}`)
+    lines.push('')
 
     if (useManualPrice && manualPrice) {
-      message += `� *VALOR DIFERENCIADO DO ATENDIMENTO:*\n`
-      message += `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}\n\n`
-      message += `⭐ *Valor personalizado definido para este atendimento*\n\n`
+      const manualValue = parseFloat(manualPrice.replace(',', '.')) || 0
+      lines.push('💄 *Atendimento Personalizado*')
+      lines.push(`• Valor definido especialmente para este atendimento: ${formatCurrency(manualValue)}`)
+      lines.push('')
     } else {
-      message += `�💄 *Serviços Solicitados:*\n`
+      lines.push('💄 *Serviços Solicitados*')
 
-      calculatedPrices.services.forEach((service, index) => {
-        const serviceInfo = services.find(s => s.id === service.serviceId)
-        const regionalPrice = regionalPrices.find(
-          rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
-        )
-        const unitPrice = regionalPrice ? regionalPrice.price : service.unitPrice
+      if (includeTravelFee) {
+        // Quando taxa de deslocamento está incluída, não detalhar preços individuais
+        calculatedPrices.services.forEach((service, index) => {
+          const serviceInfo = services.find(s => s.id === service.serviceId)
+          const regionalPrice = regionalPrices.find(
+            rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
+          )
 
-        message += `${index + 1}. ${serviceInfo?.name} (${service.quantity}x) - R$ ${(unitPrice * service.quantity).toFixed(2)}\n`
-        if (regionalPrice) {
-          message += `   └ Preço regional para ${area?.name}\n`
-        }
-      })
+          const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x)`
+          lines.push(serviceLine)
 
-      message += `\n📍 *Local:* ${area?.name}\n\n`
-    }
+          // Adicionar descrição se existir
+          if (serviceInfo?.description) {
+            lines.push(`   • ${serviceInfo.description}`)
+          }
+        })
+      } else {
+        // Quando taxa não está incluída, mostrar preços individuais
+        calculatedPrices.services.forEach((service, index) => {
+          const serviceInfo = services.find(s => s.id === service.serviceId)
+          const regionalPrice = regionalPrices.find(
+            rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
+          )
+          const unitPrice = regionalPrice ? regionalPrice.price : service.unitPrice
+          const totalPrice = unitPrice * service.quantity
 
-    // Detalhes do preço
-    message += `💰 *DETALHES DO ORÇAMENTO:*\n`
+          const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x)`
+          lines.push(`${serviceLine} — ${formatCurrency(totalPrice)}`)
 
-    // Se usar valor manual, mostrar apenas o total diferenciado
-    if (useManualPrice && manualPrice) {
-      const manualValue = parseFloat(manualPrice.replace(',', '.'))
-      message += `\n🎯 *VALOR DIFERENCIADO: R$ ${manualValue.toFixed(2)}*\n\n`
-      message += `⭐ *Valor personalizado definido para este atendimento*\n\n`
-    } else {
-      const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
-      message += `• Subtotal dos serviços: R$ ${servicesTotal.toFixed(2)}\n`
+          // Adicionar descrição se existir
+          if (serviceInfo?.description) {
+            lines.push(`   • ${serviceInfo.description}`)
+          }
 
-      if (includeTravelFee && !hasAnyRegionalPrice && area && area.travel_fee > 0) {
-        message += `• Taxa de deslocamento: R$ ${area.travel_fee.toFixed(2)}\n`
+          if (!regionalPrice) {
+            lines.push(`   • Preço unitário: ${formatCurrency(unitPrice)}`)
+          }
+        })
       }
 
-      const finalTotal = servicesTotal + (includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0)
-      message += `\n🎯 *TOTAL: R$ ${finalTotal.toFixed(2)}*\n\n`
+      lines.push('')
+      lines.push(`📍 *Local do atendimento:* ${area?.name || 'Não informado'}`)
+      lines.push('')
+    }
+
+    const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+    const travelFeeValue = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+    const finalTotal = useManualPrice && manualPrice
+      ? parseFloat(manualPrice.replace(',', '.')) || 0
+      : servicesTotal + (travelFeeValue || 0)
+
+    lines.push('💰 *Detalhes do Orçamento*')
+
+    if (useManualPrice && manualPrice) {
+      lines.push(`• Valor personalizado do atendimento: ${formatCurrency(finalTotal)}`)
+      lines.push('• Ajustado conforme necessidades específicas do evento.')
+    } else {
+      lines.push(`• Subtotal dos serviços: ${formatCurrency(servicesTotal)}`)
+      if (travelFeeValue && travelFeeValue > 0) {
+        lines.push(`• Taxa de deslocamento: ${formatCurrency(travelFeeValue)}`)
+      } else if (!includeTravelFee && area && area.travel_fee > 0 && !hasAnyRegionalPrice) {
+        // Quando taxa não está incluída, informar o desconto
+        lines.push(`• Desconto na taxa de deslocamento: ${formatCurrency(area.travel_fee)}`)
+      }
+      lines.push(`• *Total geral*: ${formatCurrency(finalTotal)}`)
 
       if (hasAnyRegionalPrice) {
-        message += `⭐ *Preços regionais aplicados* (inclui deslocamento)\n\n`
+        lines.push('• Preços regionais já incluem deslocamento e materiais extras.')
       }
     }
 
-    message += `⏰ *Duração estimada:* ${useManualPrice && manualPrice ? 
-      'A combinar' : 
-      calculatedPrices.services.reduce((total, service) => {
-        const serviceInfo = services.find(s => s.id === service.serviceId)
-        return total + (serviceInfo?.duration_minutes || 0) * service.quantity
-      }, 0)} minutos\n\n`
-    message += `✨ Orçamento válido por 7 dias\n`
-    message += `📞 Para confirmar, responda esta mensagem!`
+    const totalDurationMinutes = calculatedPrices.services.reduce((total, service) => {
+      const serviceInfo = services.find(s => s.id === service.serviceId)
+      return total + (serviceInfo?.duration_minutes || 0) * service.quantity
+    }, 0)
+
+    lines.push('')
+    lines.push(`⏰ *Duração estimada:* ${useManualPrice && manualPrice ? 'A combinar' : formatDuration(totalDurationMinutes)}`)
+    lines.push('✨ Orçamento válido por 7 dias')
+    lines.push('📞 Responda esta mensagem para confirmar sua data!')
 
     // Adicionar PDFs anexados se selecionados
+    const attachmentLines: string[] = []
     if (selectedPdfForAttachment.length > 0) {
-      message += `\n\n*📄 DOCUMENTOS ANEXADOS:*\n`
-      
+      attachmentLines.push('', '*📄 Documentos anexados:*')
       for (const pdfId of selectedPdfForAttachment) {
         const selectedPdf = availablePdfs.find(pdf => pdf.id === pdfId)
         if (selectedPdf) {
@@ -390,16 +428,18 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               .getPublicUrl(selectedPdf.path)
 
             if (data?.publicUrl) {
-              message += `� ${selectedPdf.name}\n${data.publicUrl}\n\n`
+              attachmentLines.push(`• ${selectedPdf.name}`)
+              attachmentLines.push(data.publicUrl)
             }
           } catch (err) {
             console.warn(`Erro ao obter URL do PDF ${selectedPdf.name}:`, err)
           }
         }
       }
-      
-      message += `💄 Documentos relacionados ao orçamento enviado acima.`
+      attachmentLines.push('💄 Documentos relacionados ao orçamento enviado acima.')
     }
+
+    const message = [...lines, ...attachmentLines].join('\n')
 
     setWhatsappMessage(message)
     setShowWhatsAppModal(true)
@@ -477,8 +517,16 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
       // 2. Enviar mensagem pelo WhatsApp
       const encodedMessage = encodeURIComponent(whatsappMessage)
-      const whatsappUrl = `https://wa.me/55${clientPhone.replace(/\D/g, '')}?text=${encodedMessage}`
-      window.open(whatsappUrl, '_blank')
+      const cleanedNumber = clientPhone.replace(/\D/g, '')
+      const whatsappNumber = cleanedNumber.startsWith('55') ? cleanedNumber : `55${cleanedNumber}`
+      const webWhatsappUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`
+      const mobileWhatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`
+      const isMobileDevice = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
+        navigator.userAgent || ''
+      )
+
+      const urlToOpen = isMobileDevice ? mobileWhatsappUrl : webWhatsappUrl
+      window.open(urlToOpen, '_blank', 'noopener,noreferrer')
 
       // 3. Limpar campos e fechar modal
       clearFields()

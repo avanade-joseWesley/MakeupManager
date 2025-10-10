@@ -924,8 +924,9 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
         {/* Seleção de Serviços por Categoria */}
         <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            💄 Serviços Disponíveis
+          <label className="block text-base sm:text-lg font-semibold text-gray-700 mb-4 flex items-center">
+            <span className="mr-2 text-lg">💄</span>
+            Serviços Disponíveis
           </label>
 
           {/* Cards de Categorias */}
@@ -953,13 +954,13 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                             : [...prev, categoryName]
                         )
                       }}
-                      className="w-full px-2 py-1 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 transition-colors flex items-center justify-between text-left"
+                      className="w-full px-3 py-2 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 transition-colors flex items-center justify-between text-left"
                     >
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs font-semibold text-gray-800">
+                        <span className="text-sm sm:text-base font-semibold text-gray-800">
                           {categoryName}
                         </span>
-                        <span className="text-xs text-gray-600 bg-white px-1.5 py-0.5 rounded-full">
+                        <span className="text-sm bg-white px-2 py-1 rounded-full">
                           {categoryServices.length}
                         </span>
                       </div>
@@ -970,8 +971,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
                     {/* Serviços da Categoria */}
                     {isExpanded && (
-                      <div className="p-1 bg-white border-t border-gray-100">
-                        <div className="space-y-1">
+                      <div className="p-2 sm:p-3 bg-white border-t border-gray-100">
+                        <div className="space-y-2 sm:space-y-3">
                           {categoryServices.map((service) => {
                             const isSelected = appointmentServices.some(s => s.serviceId === service.id)
                             const selectedService = appointmentServices.find(s => s.serviceId === service.id)
@@ -981,8 +982,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                             const displayPrice = regionalPrice ? regionalPrice.price : service.price
 
                             return (
-                              <div key={service.id} className="p-1 rounded hover:bg-gray-50">
-                                <div className="flex items-center space-x-1">
+                              <div key={service.id} className="p-2 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <div className="flex items-center space-x-2 sm:space-x-3">
                                   <input
                                     type="checkbox"
                                     id={`service-${service.id}`}
@@ -1002,20 +1003,20 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                                         setAppointmentServices(prev => prev.filter(s => s.serviceId !== service.id))
                                       }
                                     }}
-                                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded flex-shrink-0"
+                                    className="h-5 w-5 text-pink-600 focus:ring-pink-500 border-gray-300 rounded flex-shrink-0"
                                   />
 
                                   <div className="flex-1 min-w-0 flex items-center justify-between">
                                     <label
                                       htmlFor={`service-${service.id}`}
-                                      className="text-xs font-medium text-gray-800 cursor-pointer min-w-0 leading-tight"
+                                      className="text-sm sm:text-base font-medium text-gray-800 cursor-pointer min-w-0 leading-tight mr-3"
                                     >
                                       {service.name}
                                     </label>
-                                    <div className="text-xs font-medium text-gray-800 flex items-center space-x-1 flex-shrink-0 ml-1 mr-2">
+                                    <div className="text-sm sm:text-base font-semibold text-gray-800 flex items-center space-x-1 flex-shrink-0 ml-1 mr-2">
                                       <span>R$ {displayPrice.toFixed(2)}</span>
                                       {regionalPrice && (
-                                        <span className="text-blue-600 font-medium text-xs">⭐</span>
+                                        <span className="text-blue-600 font-medium text-sm">⭐</span>
                                       )}
                                     </div>
                                   </div>

@@ -155,24 +155,13 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
     }
   }
 
-  // Gerar horas do dia que têm atendimentos
+  // Gerar horas do dia para timeline (8h às 20h)
   const generateDayHours = () => {
-    if (!selectedDay) return []
-
-    const dayAppointments = getDayAppointments(selectedDay)
-    const hours = new Set<number>()
-
-    dayAppointments.forEach(appointment => {
-      if (appointment.scheduled_time) {
-        const [hourStr] = appointment.scheduled_time.split(':')
-        const hour = parseInt(hourStr, 10)
-        if (!isNaN(hour)) {
-          hours.add(hour)
-        }
-      }
-    })
-
-    return Array.from(hours).sort((a, b) => a - b)
+    const hours = []
+    for (let i = 8; i <= 20; i++) {
+      hours.push(i)
+    }
+    return hours
   }
 
   // Obter agendamentos de uma hora específica
@@ -356,28 +345,24 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
             </div>
 
             {/* Timeline de horas */}
-            <div className="max-h-[500px] sm:max-h-[600px] overflow-y-auto">
-              {dayHours.length === 0 ? (
-                <div className="text-center py-8 sm:py-12 text-gray-500 px-4">
-                  <div className="text-3xl sm:text-4xl mb-2">📅</div>
-                  <div className="text-base sm:text-lg font-medium">Nenhum atendimento agendado</div>
-                  <div className="text-xs sm:text-sm text-gray-400 mt-1">
-                    para {selectedDay?.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-                  </div>
-                </div>
-              ) : (
-                dayHours.map(hour => {
-                  const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
-                  
-                  return (
-                    <div key={hour} className="flex border-b border-gray-100">
-                      {/* Hora */}
-                      <div className="w-14 sm:w-20 p-2 sm:p-4 text-xs sm:text-sm font-medium text-gray-600 border-r border-gray-200 bg-gray-50 flex-shrink-0">
-                        {hour.toString().padStart(2, '0')}:00
-                      </div>
-                      
-                      {/* Atendimentos da hora */}
-                      <div className="flex-1 p-2 min-h-[60px]">
+            <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto">
+              {dayHours.map(hour => {
+                const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
+                
+                return (
+                  <div key={hour} className="flex border-b border-gray-100">
+                    {/* Hora */}
+                    <div className="w-14 sm:w-20 p-2 sm:p-4 text-xs sm:text-sm font-medium text-gray-600 border-r border-gray-200 bg-gray-50 flex-shrink-0">
+                      {hour.toString().padStart(2, '0')}:00
+                    </div>
+                    
+                    {/* Atendimentos da hora */}
+                    <div className="flex-1 p-2 min-h-[40px] sm:min-h-[50px]">
+                      {hourAppointments.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-gray-300 text-xs sm:text-sm">
+                          Nenhum atendimento
+                        </div>
+                      ) : (
                         <div className="space-y-2">
                           {hourAppointments.map(appointment => (
                             <div
@@ -407,11 +392,11 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                             </div>
                           ))}
                         </div>
-                      </div>
+                      )}
                     </div>
-                  )
-                })
-              )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </>

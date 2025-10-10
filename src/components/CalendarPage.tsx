@@ -24,6 +24,8 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedDateAppointments, setSelectedDateAppointments] = useState<CalendarAppointment[]>([])
+  const [viewMode, setViewMode] = useState<'month' | 'day'>('month')
+  const [selectedDay, setSelectedDay] = useState<Date | null>(new Date())
 
   // Carregar agendamentos do mês atual
   useEffect(() => {
@@ -94,6 +96,26 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
     setCurrentDate(new Date())
   }
 
+  // Navegação entre dias (para visualização diária)
+  const navigateDay = (direction: 'prev' | 'next') => {
+    setSelectedDay(prev => {
+      if (!prev) return new Date()
+      const newDate = new Date(prev)
+      if (direction === 'prev') {
+        newDate.setDate(newDate.getDate() - 1)
+      } else {
+        newDate.setDate(newDate.getDate() + 1)
+      }
+      return newDate
+    })
+  }
+
+  // Selecionar dia para visualização diária
+  const selectDayForView = (date: Date) => {
+    setSelectedDay(date)
+    setViewMode('day')
+  }
+
   // Gerar dias do mês para o grid
   const generateCalendarDays = () => {
     const year = currentDate.getFullYear()
@@ -133,6 +155,26 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
     }
   }
 
+  // Gerar horas do dia para timeline (8h às 20h)
+  const generateDayHours = () => {
+    const hours = []
+    for (let i = 8; i <= 20; i++) {
+      hours.push(i)
+    }
+    return hours
+  }
+
+  // Obter agendamentos de uma hora específica
+  const getHourAppointments = (date: Date, hour: number) => {
+    const dateStr = date.toISOString().split('T')[0]
+    return appointments.filter(apt => {
+      if (apt.scheduled_date !== dateStr || !apt.scheduled_time) return false
+      
+      const [hours] = apt.scheduled_time.split(':').map(Number)
+      return hours === hour
+    })
+  }
+
   // Abrir modal com detalhes do dia
   const openDayDetails = (date: Date) => {
     const dayAppointments = getDayAppointments(date)
@@ -141,6 +183,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
   }
 
   const calendarDays = generateCalendarDays()
+  const dayHours = generateDayHours()
 
   return (
     <Container>
@@ -158,6 +201,24 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
         </div>
 
         <div className="flex items-center space-x-2">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('month')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'month' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📅 Mês
+            </button>
+            <button
+              onClick={() => setViewMode('day')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'day' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              🕐 Dia
+            </button>
+          </div>
           <button
             onClick={goToToday}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
@@ -167,83 +228,173 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
         </div>
       </div>
 
-      {/* Navegação do mês */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => navigateMonth('prev')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <span className="text-xl">‹</span>
-        </button>
-
-        <h2 className="text-xl font-semibold text-gray-800">
-          {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-        </h2>
-
-        <button
-          onClick={() => navigateMonth('next')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <span className="text-xl">›</span>
-        </button>
-      </div>
-
-      {/* Dias da semana */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
-        {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-          <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid do calendário */}
-      <div className="grid grid-cols-7 gap-1 bg-white rounded-lg border border-gray-200 p-2">
-        {calendarDays.map((date, index) => {
-          const dayAppointments = getDayAppointments(date)
-          const isCurrentMonth = date.getMonth() === currentDate.getMonth()
-          const isToday = date.toDateString() === new Date().toDateString()
-
-          return (
-            <div
-              key={index}
-              onClick={() => openDayDetails(date)}
-              className={`
-                min-h-[100px] p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors
-                ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
-                ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}
-              `}
+      {viewMode === 'month' ? (
+        <>
+          {/* Navegação do mês */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => navigateMonth('prev')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>
-                {date.getDate()}
-              </div>
+              <span className="text-xl">‹</span>
+            </button>
 
-              {/* Atendimentos do dia */}
-              <div className="space-y-1">
-                {dayAppointments.slice(0, 3).map((appointment, aptIndex) => (
-                  <div
-                    key={appointment.id}
-                    className={`text-xs p-1 rounded border truncate ${getStatusColor(appointment.status)}`}
-                    title={`${appointment.clients?.name || 'Cliente'} - ${appointment.scheduled_time || 'Horário não definido'}`}
-                  >
-                    {appointment.scheduled_time && (
-                      <span className="font-medium">{appointment.scheduled_time} </span>
+            <h2 className="text-xl font-semibold text-gray-800">
+              {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            </h2>
+
+            <button
+              onClick={() => navigateMonth('next')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span className="text-xl">›</span>
+            </button>
+          </div>
+
+          {/* Dias da semana */}
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+              <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          {/* Grid do calendário */}
+          <div className="grid grid-cols-7 gap-1 bg-white rounded-lg border border-gray-200 p-2">
+            {calendarDays.map((date, index) => {
+              const dayAppointments = getDayAppointments(date)
+              const isCurrentMonth = date.getMonth() === currentDate.getMonth()
+              const isToday = date.toDateString() === new Date().toDateString()
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => selectDayForView(date)}
+                  className={`
+                    min-h-[100px] p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors
+                    ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
+                    ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}
+                  `}
+                >
+                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>
+                    {date.getDate()}
+                  </div>
+
+                  {/* Atendimentos do dia */}
+                  <div className="space-y-1">
+                    {dayAppointments.slice(0, 3).map((appointment, aptIndex) => (
+                      <div
+                        key={appointment.id}
+                        className={`text-xs p-1 rounded border truncate ${getStatusColor(appointment.status)}`}
+                        title={`${appointment.clients?.name || 'Cliente'} - ${appointment.scheduled_time || 'Horário não definido'}`}
+                      >
+                        {appointment.scheduled_time && (
+                          <span className="font-medium">{appointment.scheduled_time} </span>
+                        )}
+                        {appointment.clients?.name || 'Cliente'}
+                      </div>
+                    ))}
+
+                    {/* Indicador de mais atendimentos */}
+                    {dayAppointments.length > 3 && (
+                      <div className="text-xs text-gray-500 text-center">
+                        +{dayAppointments.length - 3} mais
+                      </div>
                     )}
-                    {appointment.clients?.name || 'Cliente'}
                   </div>
-                ))}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Visualização Diária com Timeline */}
+          <div className="bg-white rounded-lg border border-gray-200">
+            {/* Header da visualização diária */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <button
+                onClick={() => navigateDay('prev')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <span className="text-xl">‹</span>
+              </button>
 
-                {/* Indicador de mais atendimentos */}
-                {dayAppointments.length > 3 && (
-                  <div className="text-xs text-gray-500 text-center">
-                    +{dayAppointments.length - 3} mais
-                  </div>
-                )}
-              </div>
+              <h2 className="text-xl font-semibold text-gray-800">
+                {selectedDay ? selectedDay.toLocaleDateString('pt-BR', { 
+                  weekday: 'long', 
+                  day: 'numeric', 
+                  month: 'long',
+                  year: 'numeric'
+                }) : 'Selecione um dia'}
+              </h2>
+
+              <button
+                onClick={() => navigateDay('next')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <span className="text-xl">›</span>
+              </button>
             </div>
-          )
-        })}
-      </div>
+
+            {/* Timeline de horas */}
+            <div className="max-h-[600px] overflow-y-auto">
+              {dayHours.map(hour => {
+                const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
+                
+                return (
+                  <div key={hour} className="flex border-b border-gray-100">
+                    {/* Hora */}
+                    <div className="w-20 p-4 text-sm font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
+                      {hour.toString().padStart(2, '0')}:00
+                    </div>
+                    
+                    {/* Atendimentos da hora */}
+                    <div className="flex-1 p-2 min-h-[60px]">
+                      {hourAppointments.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-gray-300 text-sm">
+                          Nenhum atendimento
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {hourAppointments.map(appointment => (
+                            <div
+                              key={appointment.id}
+                              className={`p-3 rounded-lg border ${getStatusColor(appointment.status)} cursor-pointer hover:shadow-sm transition-shadow`}
+                              onClick={() => openDayDetails(selectedDay!)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="font-medium text-sm">
+                                  {appointment.clients?.name || 'Cliente'}
+                                </div>
+                                <div className="text-xs opacity-75">
+                                  {appointment.scheduled_time}
+                                </div>
+                              </div>
+                              <div className="text-xs mt-1 opacity-75">
+                                💄 {appointment.appointment_services?.[0]?.services?.name || 'Serviço'}
+                                {appointment.total_duration_minutes && (
+                                  <span className="ml-2">⏱️ {formatDuration(appointment.total_duration_minutes)}</span>
+                                )}
+                              </div>
+                              {appointment.payment_total_service && (
+                                <div className="text-xs mt-1 font-medium">
+                                  💰 R$ {appointment.payment_total_service.toFixed(2)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Modal de detalhes do dia */}
       {selectedDate && (

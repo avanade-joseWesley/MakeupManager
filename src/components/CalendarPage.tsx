@@ -394,7 +394,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
               </div>
 
               {/* Timeline de horas */}
-              <div className="max-h-[400px] sm:max-h-[500px] overflow-y-auto p-4 space-y-3">
+              <div className="max-h-[500px] sm:max-h-[600px] overflow-y-auto p-4 space-y-3">
                 {dayHours.map(hour => {
                   const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
                   const isCurrentHour = new Date().getHours() === hour

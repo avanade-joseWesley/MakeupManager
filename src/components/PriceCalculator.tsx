@@ -718,7 +718,12 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       // 3. Calcular valores de pagamento e tempo total
       const totalServiceValue = useManualPrice && manualPrice ? 
         parseFloat(manualPrice.replace(',', '.')) : 
-        calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+        (() => {
+          const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+          const area = areas.find(a => a.id === selectedArea)
+          const travelFee = includeTravelFee && area ? area.travel_fee : 0
+          return servicesTotal + travelFee
+        })()
       const downPaymentPaid = parseFloat(downPaymentAmount || '0')
 
       // Calcular tempo total do atendimento (soma da duração de todos os serviços)
@@ -730,16 +735,12 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         }, 0)
 
       // Determinar status do pagamento
-      let finalPaymentStatus: 'pending' | 'paid' | 'partial' = 'pending'
+      let finalPaymentStatus: 'pending' | 'paid' = 'pending'
       if (isAppointmentConfirmed) {
-        if (totalServiceValue === 0) {
-          finalPaymentStatus = 'paid' // Serviço gratuito
-        } else if (downPaymentPaid >= totalServiceValue) {
-          finalPaymentStatus = 'paid' // Pago integralmente
-        } else if (downPaymentPaid > 0) {
-          finalPaymentStatus = 'partial' // Pagamento parcial
+        if (totalServiceValue === 0 || downPaymentPaid >= totalServiceValue) {
+          finalPaymentStatus = 'paid' // Pago integralmente ou serviço gratuito
         } else {
-          finalPaymentStatus = 'pending' // Pendente
+          finalPaymentStatus = 'pending' // Pendente (pagamento parcial ou total)
         }
       }
 
@@ -1578,7 +1579,10 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     <strong>📊 Status calculado:</strong>{' '}
                     <span className="font-medium">
                       {(() => {
-                        const totalValue = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                        const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                        const area = areas.find(a => a.id === selectedArea)
+                        const travelFee = includeTravelFee && area ? area.travel_fee : 0
+                        const totalValue = servicesTotal + travelFee
                         const downPayment = parseFloat(downPaymentAmount || '0')
                         const pending = totalValue - downPayment
 
@@ -1695,7 +1699,12 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   <div className="space-y-0.5 sm:space-y-1">
                     <div><strong>💄 Serviços:</strong> {useManualPrice && manualPrice ? 'Valor diferenciado' : `${calculatedPrices.services.length} selecionado(s)`}</div>
                     <div><strong>📍 Local:</strong> {areas.find(a => a.id === selectedArea)?.name}</div>
-                    <div><strong>💰 Total:</strong> {useManualPrice && manualPrice ? `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` : `R$ ${calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0).toFixed(2)}`}</div>
+                    <div><strong>💰 Total:</strong> {useManualPrice && manualPrice ? `R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` : `R$ ${(() => {
+                      const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                      const area = areas.find(a => a.id === selectedArea)
+                      const travelFee = includeTravelFee && area ? area.travel_fee : 0
+                      return (servicesTotal + travelFee).toFixed(2)
+                    })()}`}</div>
                     {!useManualPrice && (
                       <div><strong>⏱️ Tempo Estimado:</strong> {formatDuration(calculatedPrices.services.reduce((total, service) => {
                         const serviceInfo = services.find(s => s.id === service.serviceId)
@@ -1706,7 +1715,12 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       <>
                         <div><strong>💳 Entrada:</strong> R$ {parseFloat(downPaymentAmount || '0').toFixed(2)}</div>
                         <div><strong>⏳ Pendente:</strong> R$ {(() => {
-                          const totalValue = useManualPrice && manualPrice ? parseFloat(manualPrice.replace(',', '.')) : calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                          const totalValue = useManualPrice && manualPrice ? parseFloat(manualPrice.replace(',', '.')) : (() => {
+                            const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+                            const area = areas.find(a => a.id === selectedArea)
+                            const travelFee = includeTravelFee && area ? area.travel_fee : 0
+                            return servicesTotal + travelFee
+                          })()
                           return (totalValue - parseFloat(downPaymentAmount || '0')).toFixed(2)
                         })()}</div>
                       </>

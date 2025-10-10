@@ -6,7 +6,7 @@ interface AppointmentsPageProps {
   user: any
   onBack: () => void
   initialFilter?: 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'overdue'
-  initialPaymentFilter?: 'all' | 'pending' | 'paid' | 'partial'
+  initialPaymentFilter?: 'all' | 'pending' | 'paid'
 }
 
 interface Appointment {
@@ -19,7 +19,7 @@ interface Appointment {
   total_received: number
   payment_down_payment_paid: number
   payment_total_service: number
-  payment_status: 'pending' | 'paid' | 'partial'
+  payment_status: 'pending' | 'paid'
   total_duration_minutes: number
   notes: string | null
   client: any // Simplificar para any por enquanto
@@ -32,7 +32,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'overdue'>(initialFilter)
-  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'paid' | 'partial'>(initialPaymentFilter)
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'pending' | 'paid'>(initialPaymentFilter)
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
@@ -41,7 +41,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
     scheduled_date: '',
     scheduled_time: '',
     notes: '',
-    payment_status: 'pending' as 'pending' | 'paid' | 'partial',
+    payment_status: 'pending' as 'pending' | 'paid',
     total_received: 0
   })
 
@@ -171,15 +171,9 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-green-100 text-green-800'
-      case 'partial': return 'bg-blue-100 text-blue-800'
       case 'pending': return 'bg-orange-100 text-orange-800'
       default: return 'bg-gray-100 text-gray-800'
     }
-  }
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Não definido'
-    return formatDate(dateString)
   }
 
   const formatTime = (timeString: string | null) => {
@@ -300,7 +294,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
 💰 *Valor Pendente:* R$ ${(appointment.payment_total_service - appointment.total_received).toFixed(2)}
 
 📊 *Status:* ${appointment.status === 'confirmed' ? 'Confirmado' : appointment.status === 'pending' ? 'Aguardando Confirmação' : appointment.status === 'completed' ? 'Realizado' : 'Cancelado'}
-💳 *Pagamento:* ${appointment.payment_status === 'paid' ? 'Pago' : appointment.payment_status === 'partial' ? 'Parcial' : 'Pendente'}
+💳 *Pagamento:* ${appointment.payment_status === 'paid' ? 'Pago' : 'Pendente'}
 
 ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
 
@@ -458,7 +452,6 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
               >
                 <option value="all">Todos</option>
                 <option value="pending">Pendente</option>
-                <option value="partial">Parcial</option>
                 <option value="paid">Pago</option>
               </select>
             </div>
@@ -493,8 +486,6 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                   return 'bg-green-50 border-l-4 border-green-500' // Verde para confirmado
                 } else if (paymentStatus === 'paid') {
                   return 'bg-emerald-50 border-l-4 border-emerald-500' // Verde escuro para pago
-                } else if (paymentStatus === 'partial') {
-                  return 'bg-yellow-50 border-l-4 border-yellow-500' // Amarelo para parcial
                 } else {
                   return 'bg-orange-50 border-l-4 border-orange-500' // Laranja para pendente
                 }
@@ -563,7 +554,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                             ) : (
                               <>
                                 <div className="text-lg font-bold text-orange-600">
-                                  R$ {(appointment.payment_total_service - appointment.total_received).toFixed(2)}
+                                  R$ {(appointment.payment_total_service - appointment.payment_down_payment_paid).toFixed(2)}
                                 </div>
                                 <div className="text-xs text-gray-500">
                                   Pendente
@@ -785,7 +776,6 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200 bg-white text-gray-900"
                 >
                   <option value="pending">⏳ Pagamento Pendente</option>
-                  <option value="partial">🔄 Pagamento Parcial</option>
                   <option value="paid">✅ Pagamento Completo</option>
                 </select>
               </div>

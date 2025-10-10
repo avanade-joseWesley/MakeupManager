@@ -155,13 +155,24 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
     }
   }
 
-  // Gerar horas do dia para timeline (8h às 20h)
+  // Gerar horas do dia que têm atendimentos
   const generateDayHours = () => {
-    const hours = []
-    for (let i = 8; i <= 20; i++) {
-      hours.push(i)
-    }
-    return hours
+    if (!selectedDay) return []
+
+    const dayAppointments = getDayAppointments(selectedDay)
+    const hours = new Set<number>()
+
+    dayAppointments.forEach(appointment => {
+      if (appointment.scheduled_time) {
+        const [hourStr] = appointment.scheduled_time.split(':')
+        const hour = parseInt(hourStr, 10)
+        if (!isNaN(hour)) {
+          hours.add(hour)
+        }
+      }
+    })
+
+    return Array.from(hours).sort((a, b) => a - b)
   }
 
   // Obter agendamentos de uma hora específica
@@ -188,23 +199,23 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
   return (
     <Container>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <button
             onClick={onBack}
             className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
             <span>←</span>
-            <span>Voltar</span>
+            <span className="hidden sm:inline">Voltar</span>
           </button>
-          <h1 className="text-2xl font-bold text-gray-800">📅 Calendário de Atendimentos</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">📅 Calendário</h1>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 w-full sm:w-auto">
+          <div className="flex bg-gray-100 rounded-lg p-1 w-full sm:w-auto">
             <button
               onClick={() => setViewMode('month')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'month' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -212,7 +223,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
             </button>
             <button
               onClick={() => setViewMode('day')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 sm:flex-none px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                 viewMode === 'day' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -221,7 +232,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           </div>
           <button
             onClick={goToToday}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+            className="px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs sm:text-sm font-medium"
           >
             Hoje
           </button>
@@ -231,7 +242,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
       {viewMode === 'month' ? (
         <>
           {/* Navegação do mês */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
             <button
               onClick={() => navigateMonth('prev')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -239,7 +250,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
               <span className="text-xl">‹</span>
             </button>
 
-            <h2 className="text-xl font-semibold text-gray-800">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 text-center">
               {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             </h2>
 
@@ -254,14 +265,15 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           {/* Dias da semana */}
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-              <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
-                {day}
+              <div key={day} className="p-1 sm:p-2 text-center text-xs sm:text-sm font-medium text-gray-600">
+                <span className="hidden sm:inline">{day}</span>
+                <span className="sm:hidden">{day.slice(0, 1)}</span>
               </div>
             ))}
           </div>
 
           {/* Grid do calendário */}
-          <div className="grid grid-cols-7 gap-1 bg-white rounded-lg border border-gray-200 p-2">
+          <div className="grid grid-cols-7 gap-1 bg-white rounded-lg border border-gray-200 p-1 sm:p-2">
             {calendarDays.map((date, index) => {
               const dayAppointments = getDayAppointments(date)
               const isCurrentMonth = date.getMonth() === currentDate.getMonth()
@@ -272,34 +284,39 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                   key={index}
                   onClick={() => selectDayForView(date)}
                   className={`
-                    min-h-[100px] p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors
+                    min-h-[80px] sm:min-h-[100px] p-1 sm:p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors
                     ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
                     ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}
                   `}
                 >
-                  <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>
+                  <div className={`text-xs sm:text-sm font-medium mb-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>
                     {date.getDate()}
                   </div>
 
                   {/* Atendimentos do dia */}
                   <div className="space-y-1">
-                    {dayAppointments.slice(0, 3).map((appointment, aptIndex) => (
+                    {dayAppointments.slice(0, 2).map((appointment, aptIndex) => (
                       <div
                         key={appointment.id}
                         className={`text-xs p-1 rounded border truncate ${getStatusColor(appointment.status)}`}
                         title={`${appointment.clients?.name || 'Cliente'} - ${appointment.scheduled_time || 'Horário não definido'}`}
                       >
-                        {appointment.scheduled_time && (
-                          <span className="font-medium">{appointment.scheduled_time} </span>
-                        )}
-                        {appointment.clients?.name || 'Cliente'}
+                        <div className="hidden sm:block">
+                          {appointment.scheduled_time && (
+                            <span className="font-medium">{appointment.scheduled_time} </span>
+                          )}
+                          {appointment.clients?.name || 'Cliente'}
+                        </div>
+                        <div className="sm:hidden">
+                          {appointment.clients?.name?.slice(0, 6) || 'Cliente'}
+                        </div>
                       </div>
                     ))}
 
                     {/* Indicador de mais atendimentos */}
-                    {dayAppointments.length > 3 && (
+                    {dayAppointments.length > 2 && (
                       <div className="text-xs text-gray-500 text-center">
-                        +{dayAppointments.length - 3} mais
+                        +{dayAppointments.length - 2}
                       </div>
                     )}
                   </div>
@@ -313,7 +330,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           {/* Visualização Diária com Timeline */}
           <div className="bg-white rounded-lg border border-gray-200">
             {/* Header da visualização diária */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
               <button
                 onClick={() => navigateDay('prev')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -321,7 +338,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                 <span className="text-xl">‹</span>
               </button>
 
-              <h2 className="text-xl font-semibold text-gray-800">
+              <h2 className="text-sm sm:text-xl font-semibold text-gray-800 text-center px-2">
                 {selectedDay ? selectedDay.toLocaleDateString('pt-BR', { 
                   weekday: 'long', 
                   day: 'numeric', 
@@ -339,33 +356,37 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
             </div>
 
             {/* Timeline de horas */}
-            <div className="max-h-[600px] overflow-y-auto">
-              {dayHours.map(hour => {
-                const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
-                
-                return (
-                  <div key={hour} className="flex border-b border-gray-100">
-                    {/* Hora */}
-                    <div className="w-20 p-4 text-sm font-medium text-gray-600 border-r border-gray-200 bg-gray-50">
-                      {hour.toString().padStart(2, '0')}:00
-                    </div>
-                    
-                    {/* Atendimentos da hora */}
-                    <div className="flex-1 p-2 min-h-[60px]">
-                      {hourAppointments.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-gray-300 text-sm">
-                          Nenhum atendimento
-                        </div>
-                      ) : (
+            <div className="max-h-[500px] sm:max-h-[600px] overflow-y-auto">
+              {dayHours.length === 0 ? (
+                <div className="text-center py-8 sm:py-12 text-gray-500 px-4">
+                  <div className="text-3xl sm:text-4xl mb-2">📅</div>
+                  <div className="text-base sm:text-lg font-medium">Nenhum atendimento agendado</div>
+                  <div className="text-xs sm:text-sm text-gray-400 mt-1">
+                    para {selectedDay?.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </div>
+                </div>
+              ) : (
+                dayHours.map(hour => {
+                  const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
+                  
+                  return (
+                    <div key={hour} className="flex border-b border-gray-100">
+                      {/* Hora */}
+                      <div className="w-14 sm:w-20 p-2 sm:p-4 text-xs sm:text-sm font-medium text-gray-600 border-r border-gray-200 bg-gray-50 flex-shrink-0">
+                        {hour.toString().padStart(2, '0')}:00
+                      </div>
+                      
+                      {/* Atendimentos da hora */}
+                      <div className="flex-1 p-2 min-h-[60px]">
                         <div className="space-y-2">
                           {hourAppointments.map(appointment => (
                             <div
                               key={appointment.id}
-                              className={`p-3 rounded-lg border ${getStatusColor(appointment.status)} cursor-pointer hover:shadow-sm transition-shadow`}
+                              className={`p-2 sm:p-3 rounded-lg border ${getStatusColor(appointment.status)} cursor-pointer hover:shadow-sm transition-shadow`}
                               onClick={() => openDayDetails(selectedDay!)}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="font-medium text-sm">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <div className="font-medium text-xs sm:text-sm">
                                   {appointment.clients?.name || 'Cliente'}
                                 </div>
                                 <div className="text-xs opacity-75">
@@ -375,7 +396,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                               <div className="text-xs mt-1 opacity-75">
                                 💄 {appointment.appointment_services?.[0]?.services?.name || 'Serviço'}
                                 {appointment.total_duration_minutes && (
-                                  <span className="ml-2">⏱️ {formatDuration(appointment.total_duration_minutes)}</span>
+                                  <span className="ml-1 sm:ml-2">⏱️ {formatDuration(appointment.total_duration_minutes)}</span>
                                 )}
                               </div>
                               {appointment.payment_total_service && (
@@ -386,11 +407,11 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                             </div>
                           ))}
                         </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })
+              )}
             </div>
           </div>
         </>
@@ -398,44 +419,44 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
 
       {/* Modal de detalhes do dia */}
       {selectedDate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-sm sm:max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-800 pr-2">
                   📅 Atendimentos de {selectedDate.toLocaleDateString('pt-BR')}
                 </h3>
                 <button
                   onClick={() => setSelectedDate(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0"
                 >
                   <span className="text-xl">×</span>
                 </button>
               </div>
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto p-6">
+            <div className="max-h-[70vh] overflow-y-auto p-4 sm:p-6">
               {selectedDateAppointments.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <div className="text-4xl mb-2">📅</div>
+                <div className="text-center py-6 sm:py-8 text-gray-500">
+                  <div className="text-3xl sm:text-4xl mb-2">📅</div>
                   Nenhum atendimento agendado para este dia
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {selectedDateAppointments.map(appointment => (
-                    <div key={appointment.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-semibold text-gray-900">
+                    <div key={appointment.id} className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
+                        <div className="font-semibold text-gray-900 text-sm sm:text-base">
                           {appointment.clients?.name || 'Cliente não informado'}
                         </div>
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${getStatusColor(appointment.status)}`}>
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium self-start sm:self-auto ${getStatusColor(appointment.status)}`}>
                           {appointment.status === 'confirmed' ? 'Confirmado' :
                            appointment.status === 'pending' ? 'Aguardando' :
                            appointment.status === 'completed' ? 'Concluído' : 'Cancelado'}
                         </span>
                       </div>
 
-                      <div className="text-sm text-gray-600 space-y-1">
+                      <div className="text-xs sm:text-sm text-gray-600 space-y-1">
                         <div>🕐 {appointment.scheduled_time || 'Horário não definido'}</div>
                         <div>💄 {appointment.appointment_services?.[0]?.services?.name || 'Serviço'}</div>
                         {appointment.total_duration_minutes && (
@@ -456,10 +477,10 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
 
       {/* Loading overlay */}
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-40">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
-            <span>Carregando calendário...</span>
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-pink-500"></div>
+            <span className="text-sm sm:text-base">Carregando calendário...</span>
           </div>
         </div>
       )}

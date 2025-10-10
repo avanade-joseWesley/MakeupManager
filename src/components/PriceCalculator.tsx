@@ -251,8 +251,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
     let finalPrice = servicesTotal
 
-    // Taxa de deslocamento (opcional - não adicionar se já tem preço regional)
-    if (includeTravelFee && !hasAnyRegionalPrice && area && area.travel_fee > 0) {
+    // Taxa de deslocamento (opcional - pode ser adicionada mesmo com preço regional)
+    if (includeTravelFee && area && area.travel_fee > 0) {
       finalPrice += area.travel_fee
     }
 
@@ -273,7 +273,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
         regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
       )
-      const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+      const travelFee = includeTravelFee && area ? area.travel_fee : 0
       const finalTotal = useManualPrice && manualPrice ? totalValue : totalValue + travelFee
       const thirtyPercent = (finalTotal * 0.3).toFixed(2)
       setDownPaymentAmount(thirtyPercent)
@@ -394,7 +394,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     lines.push('')
 
     const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
-    const travelFeeValue = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+    const travelFeeValue = includeTravelFee && area ? area.travel_fee : 0
     const finalTotal = useManualPrice && manualPrice
       ? parseFloat(manualPrice.replace(',', '.')) || 0
       : servicesTotal + (travelFeeValue || 0)
@@ -408,7 +408,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       // lines.push(`• Subtotal dos serviços: ${formatCurrency(servicesTotal)}`)
       if (travelFeeValue && travelFeeValue > 0) {
         lines.push(`• *Total geral*: *R$ ${finalTotal.toFixed(2)}* (inclui taxa de deslocamento)`)
-      } else if (!includeTravelFee && area && area.travel_fee > 0 && !hasAnyRegionalPrice) {
+      } else if (!includeTravelFee && area && area.travel_fee > 0) {
         // Quando taxa não está incluída, informar o desconto
         lines.push(`• *Total geral*: *R$ ${finalTotal.toFixed(2)}* (taxa de deslocamento foi descontada - R$ ${area.travel_fee.toFixed(2)})`)
       } else {
@@ -1101,7 +1101,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                 regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
               )
 
-              return area && area.travel_fee > 0 && !hasAnyRegionalPrice && (
+              return area && area.travel_fee > 0 && (
                 <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                   <input
                     type="checkbox"
@@ -1122,7 +1122,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
                 regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
               )
-              return !(area && area.travel_fee > 0 && !hasAnyRegionalPrice) && (
+              return !(area && area.travel_fee > 0) && (
                 <div className="text-sm text-gray-500 italic">
                   Nenhuma opção adicional disponível para esta combinação de serviços e região.
                 </div>
@@ -1187,10 +1187,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
               {/* Taxa de deslocamento */}
               {includeTravelFee && (() => {
                 const area = areas.find(a => a.id === selectedArea)
-                const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
-                  regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
-                )
-                return !hasAnyRegionalPrice && area && area.travel_fee > 0 && (
+                return area && area.travel_fee > 0 && (
                   <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
                     <div className="flex justify-between text-orange-800">
                       <span className="font-medium">🚗 Taxa de deslocamento:</span>
@@ -1211,10 +1208,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       `R$ ${(() => {
                         const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
                         const area = areas.find(a => a.id === selectedArea)
-                        const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
-                          regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
-                        )
-                        const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+                        const travelFee = includeTravelFee && area ? area.travel_fee : 0
                         return (servicesTotal + travelFee).toFixed(2)
                       })()}`
                     }
@@ -1278,7 +1272,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
             <li>• <strong>Preço Padrão:</strong> Valor base de cada serviço</li>
             <li>• <strong>Preço Regional:</strong> Valor específico para determinada região (se cadastrado)</li>
             <li>• <strong>Regra:</strong> Se existe preço regional, ele substitui completamente o preço padrão</li>
-            <li>• <strong>O preço regional JÁ INCLUI</strong> deslocamento, materiais extras, etc.</li>
+            <li>• <strong>Taxa de Deslocamento:</strong> Pode ser adicionada opcionalmente, mesmo com preços regionais</li>
           </ul>
         </div>
       </div>
@@ -1822,10 +1816,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                         `R$ ${(() => {
                           const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
                           const area = areas.find(a => a.id === selectedArea)
-                          const hasAnyRegionalPrice = calculatedPrices.services.some(service =>
-                            regionalPrices.some(rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea)
-                          )
-                          const travelFee = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
+                          const travelFee = includeTravelFee && area ? area.travel_fee : 0
                           return (servicesTotal + travelFee).toFixed(2)
                         })()}`
                       }

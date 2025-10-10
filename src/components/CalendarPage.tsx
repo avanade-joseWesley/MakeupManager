@@ -16,6 +16,8 @@ interface CalendarAppointment {
   appointment_services: any[]
   total_duration_minutes: number | null
   payment_total_service: number | null
+  payment_down_payment_paid: number | null
+  payment_down_payment_expected: number | null
 }
 
 export default function CalendarPage({ user, onBack }: CalendarPageProps) {
@@ -26,6 +28,9 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
   const [selectedDateAppointments, setSelectedDateAppointments] = useState<CalendarAppointment[]>([])
   const [viewMode, setViewMode] = useState<'month' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date())
+  const [editingAppointment, setEditingAppointment] = useState<string | null>(null)
+  const [editTotalValue, setEditTotalValue] = useState<string>('')
+  const [editDownPayment, setEditDownPayment] = useState<string>('')
 
   // Carregar agendamentos do mês atual
   useEffect(() => {
@@ -52,6 +57,8 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           status,
           total_duration_minutes,
           payment_total_service,
+          payment_down_payment_paid,
+          payment_down_payment_expected,
           clients!inner (
             name,
             phone
@@ -180,6 +187,58 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
     const dayAppointments = getDayAppointments(date)
     setSelectedDate(date)
     setSelectedDateAppointments(dayAppointments)
+  }
+
+  // Iniciar edição de valores de pagamento
+  const startEditingPayment = (appointment: CalendarAppointment) => {
+    if (appointment.status === 'cancelled') {
+      alert('Não é possível editar valores de agendamentos cancelados.')
+      return
+    }
+    setEditingAppointment(appointment.id)
+    setEditTotalValue(appointment.payment_total_service?.toString() || '0')
+    setEditDownPayment(appointment.payment_down_payment_expected?.toString() || '0')
+  }
+
+  // Salvar alterações dos valores
+  const savePaymentChanges = async (appointmentId: string) => {
+    try {
+      const totalValue = parseFloat(editTotalValue) || 0
+      const downPayment = parseFloat(editDownPayment) || 0
+
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          payment_total_service: totalValue,
+          payment_down_payment_expected: downPayment,
+          last_edited_at: new Date().toISOString(),
+          edited_by: user?.id
+        })
+        .eq('id', appointmentId)
+        .eq('user_id', user?.id)
+
+      if (error) throw error
+
+      // Recarregar agendamentos
+      await loadMonthAppointments()
+
+      // Fechar modo de edição
+      setEditingAppointment(null)
+      setEditTotalValue('')
+      setEditDownPayment('')
+
+      alert('Valores atualizados com sucesso!')
+    } catch (error) {
+      console.error('Erro ao salvar alterações:', error)
+      alert('Erro ao salvar alterações. Tente novamente.')
+    }
+  }
+
+  // Cancelar edição
+  const cancelEditing = () => {
+    setEditingAppointment(null)
+    setEditTotalValue('')
+    setEditDownPayment('')
   }
 
   const calendarDays = generateCalendarDays()
@@ -452,7 +511,14 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                                       {appointment.clients?.name || 'Cliente'}
                                     </div>
                                     <div className="text-xs text-gray-600 mt-1">
-                                      💄 {appointment.appointment_services?.[0]?.services?.name || 'Serviço'}
+                                      📞 {appointment.clients?.phone || 'Sem telefone'}
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                     💄 {appointment.appointment_services && appointment.appointment_services.length > 0
+                                        ? appointment.appointment_services.length === 1
+                                          ? appointment.appointment_services[0].services?.name
+                                          : `${appointment.appointment_services.length} serviços`
+                                        : 'Serviço não informado'}
                                       {appointment.total_duration_minutes && (
                                         <span className="ml-2 font-medium">
                                           ⏱️ {formatDuration(appointment.total_duration_minutes)}
@@ -559,25 +625,113 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div className="space-y-2">
                           <div className="flex items-center text-gray-700">
+                            <span className="mr-2">📞</span>
+                            <span className="font-medium">{appointment.clients?.phone || 'Telefone não informado'}</span>
+                          </div>
+                          <div className="flex items-center text-gray-700">
                             <span className="mr-2">🕐</span>
                             <span className="font-medium">{appointment.scheduled_time || 'Horário não definido'}</span>
                           </div>
                           <div className="flex items-center text-gray-700">
-                            <span className="mr-2">💄</span>
-                            <span>{appointment.appointment_services?.[0]?.services?.name || 'Serviço'}</span>
+                            <span className="mr-2">⏱️</span>
+                            <span>{appointment.total_duration_minutes ? formatDuration(appointment.total_duration_minutes) : 'Duração não definida'}</span>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          {appointment.total_duration_minutes && (
-                            <div className="flex items-center text-gray-700">
-                              <span className="mr-2">⏱️</span>
-                              <span>{formatDuration(appointment.total_duration_minutes)}</span>
+                          <div className="text-gray-700">
+                            <div className="flex items-center mb-2">
+                              <span className="mr-2">💄</span>
+                              <span className="font-medium">Serviços:</span>
                             </div>
-                          )}
+                            <div className="ml-6 space-y-1">
+                              {appointment.appointment_services && appointment.appointment_services.length > 0 ? (
+                                appointment.appointment_services.map((service, index) => (
+                                  <div key={index} className="text-sm">
+                                    • {service.services?.name || 'Serviço'}
+                                    {service.quantity > 1 && ` (${service.quantity}x)`}
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-sm text-gray-500">Nenhum serviço informado</div>
+                              )}
+                            </div>
+                          </div>
                           {appointment.payment_total_service && (
-                            <div className="flex items-center text-gray-700">
-                              <span className="mr-2">💰</span>
-                              <span className="font-bold text-green-600">R$ {appointment.payment_total_service.toFixed(2)}</span>
+                            <div className="text-gray-700">
+                              {editingAppointment === appointment.id ? (
+                                <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      💰 Valor Total (R$)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={editTotalValue}
+                                      onChange={(e) => setEditTotalValue(e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      💵 Valor da Entrada (R$)
+                                    </label>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={editDownPayment}
+                                      onChange={(e) => setEditDownPayment(e.target.value)}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => savePaymentChanges(appointment.id)}
+                                      className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                                    >
+                                      ✅ Salvar
+                                    </button>
+                                    <button
+                                      onClick={cancelEditing}
+                                      className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
+                                    >
+                                      ❌ Cancelar
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <div className="flex items-center">
+                                    <span className="mr-2">💰</span>
+                                    <span className="font-bold text-green-600">R$ {appointment.payment_total_service.toFixed(2)}</span>
+                                    {appointment.status !== 'cancelled' && (
+                                      <button
+                                        onClick={() => startEditingPayment(appointment)}
+                                        className="ml-2 text-blue-500 hover:text-blue-700 text-sm"
+                                        title="Editar valores"
+                                      >
+                                        ✏️
+                                      </button>
+                                    )}
+                                  </div>
+                                  {appointment.payment_down_payment_expected && appointment.payment_down_payment_expected > 0 && (
+                                    <div className="flex items-center text-sm">
+                                      <span className="mr-2">💵</span>
+                                      <span className="text-blue-600">Entrada: R$ {appointment.payment_down_payment_expected.toFixed(2)}</span>
+                                    </div>
+                                  )}
+                                  {appointment.payment_down_payment_paid && appointment.payment_down_payment_paid > 0 && (
+                                    <div className="flex items-center text-sm">
+                                      <span className="mr-2">✅</span>
+                                      <span className="text-green-600">Entrada paga: R$ {appointment.payment_down_payment_paid.toFixed(2)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

@@ -716,14 +716,19 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       }
 
       // 3. Calcular valores de pagamento e tempo total
-      const totalServiceValue = useManualPrice && manualPrice ? 
+      
+      // Calcular valor dos serviços (SEM taxa de deslocamento)
+      const servicesOnlyValue = useManualPrice && manualPrice ? 
         parseFloat(manualPrice.replace(',', '.')) : 
-        (() => {
-          const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
-          const area = areas.find(a => a.id === selectedArea)
-          const travelFee = includeTravelFee && area ? area.travel_fee : 0
-          return servicesTotal + travelFee
-        })()
+        calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
+      
+      // Calcular taxa de deslocamento
+      const area = areas.find(a => a.id === selectedArea)
+      const travelFee = includeTravelFee && area ? area.travel_fee : 0
+      
+      // Valor total do atendimento (serviços + taxa)
+      const totalAppointmentValue = servicesOnlyValue + travelFee
+      
       const downPaymentPaid = parseFloat(downPaymentAmount || '0')
 
       // Calcular tempo total do atendimento (soma da duração de todos os serviços)
@@ -737,7 +742,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
       // Determinar status do pagamento
       let finalPaymentStatus: 'pending' | 'paid' = 'pending'
       if (isAppointmentConfirmed) {
-        if (totalServiceValue === 0 || downPaymentPaid >= totalServiceValue) {
+        if (totalAppointmentValue === 0 || downPaymentPaid >= totalAppointmentValue) {
           finalPaymentStatus = 'paid' // Pago integralmente ou serviço gratuito
         } else {
           finalPaymentStatus = 'pending' // Pendente (pagamento parcial ou total)
@@ -759,7 +764,8 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
           // Campos de pagamento
           payment_down_payment_paid: downPaymentPaid,
-          payment_total_service: totalServiceValue,
+          payment_total_service: servicesOnlyValue, // Valor apenas dos serviços
+          payment_total_appointment: totalAppointmentValue, // Valor total (serviços + taxa)
           payment_status: finalPaymentStatus,
           total_amount_paid: downPaymentPaid, // Novo campo - valor já pago
 

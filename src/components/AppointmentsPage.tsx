@@ -19,6 +19,7 @@ interface Appointment {
   total_received: number
   payment_down_payment_paid: number
   payment_total_service: number
+  payment_total_appointment: number
   payment_status: 'pending' | 'paid'
   total_amount_paid: number
   total_duration_minutes: number
@@ -103,6 +104,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
           total_received,
           payment_down_payment_paid,
           payment_total_service,
+          payment_total_appointment,
           payment_status,
           total_amount_paid,
           total_duration_minutes,
@@ -292,9 +294,9 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
 📅 *Data:* ${appointment.scheduled_date ? formatDate(appointment.scheduled_date) : 'Não definida'}
 ⏰ *Horário:* ${appointment.scheduled_time || 'Não definido'}
 📍 *Local:* ${appointment.appointment_address || 'A combinar'}
-💰 *Valor Total:* R$ ${appointment.payment_total_service.toFixed(2)}
+💰 *Valor Total:* R$ ${appointment.payment_total_appointment.toFixed(2)}
 💰 *Valor Pago:* R$ ${appointment.total_amount_paid.toFixed(2)}
-💰 *Valor Pendente:* R$ ${(appointment.payment_total_service - appointment.total_amount_paid).toFixed(2)}
+💰 *Valor Pendente:* R$ ${(appointment.payment_total_appointment - appointment.total_amount_paid).toFixed(2)}
 
 📊 *Status:* ${appointment.status === 'confirmed' ? 'Confirmado' : appointment.status === 'pending' ? 'Aguardando Confirmação' : appointment.status === 'completed' ? 'Realizado' : 'Cancelado'}
 💳 *Pagamento:* ${appointment.payment_status === 'paid' ? 'Pago' : 'Pendente'}
@@ -557,7 +559,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                             ) : (
                               <>
                                 <div className="text-lg font-bold text-orange-600">
-                                  R$ {(appointment.payment_total_service - appointment.total_amount_paid).toFixed(2)}
+                                  R$ {(appointment.payment_total_appointment - appointment.total_amount_paid).toFixed(2)}
                                 </div>
                                 <div className="text-xs text-gray-500">
                                   Pendente
@@ -613,14 +615,101 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                         <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide">💰 Valor Total:</div>
                         <div className="bg-white px-3 py-2 rounded border border-gray-200">
                           <div className="text-sm font-semibold text-green-600">
-                            R$ {appointment.payment_total_service.toFixed(2)}
+                            R$ {appointment.payment_total_appointment.toFixed(2)}
                           </div>
                         </div>
                       </div>
 
+                      {/* Informações de Pagamento Detalhadas */}
+                      {appointment.payment_total_appointment !== null && 
+                       appointment.payment_total_appointment !== undefined && 
+                       appointment.payment_total_appointment > 0 && (
+                        <div className="mb-3">
+                          <div className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">💳 Detalhes de Pagamento:</div>
+                          <div className="space-y-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                            {/* Valor dos Serviços */}
+                            {appointment.payment_total_service && 
+                             appointment.payment_total_service !== appointment.payment_total_appointment && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 flex items-center">
+                                  <span className="mr-2">💄</span>
+                                  Serviços:
+                                </span>
+                                <span className="text-gray-700 font-medium">
+                                  R$ {appointment.payment_total_service.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Taxa de Deslocamento */}
+                            {appointment.payment_total_service && 
+                             appointment.payment_total_service !== appointment.payment_total_appointment && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 flex items-center">
+                                  <span className="mr-2">🚗</span>
+                                  Taxa de Deslocamento:
+                                </span>
+                                <span className="text-orange-600 font-medium">
+                                  R$ {(appointment.payment_total_appointment - appointment.payment_total_service).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Entrada Paga */}
+                            {appointment.payment_down_payment_paid !== undefined && 
+                             appointment.payment_down_payment_paid > 0 && (
+                              <div className="flex items-center justify-between text-sm pt-2 border-t border-green-200">
+                                <span className="text-gray-600 flex items-center">
+                                  <span className="mr-2">💰</span>
+                                  Entrada Paga:
+                                </span>
+                                <span className="text-blue-700 font-bold">
+                                  R$ {appointment.payment_down_payment_paid.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Total Já Pago */}
+                            {appointment.total_amount_paid !== undefined && 
+                             appointment.total_amount_paid > 0 && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600 flex items-center">
+                                  <span className="mr-2">✅</span>
+                                  Total Já Pago:
+                                </span>
+                                <span className="text-green-600 font-bold">
+                                  R$ {appointment.total_amount_paid.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Valor Pendente */}
+                            {appointment.payment_total_appointment && 
+                             appointment.total_amount_paid !== undefined && (
+                              <div className="flex items-center justify-between pt-2 border-t border-green-200">
+                                <span className="text-gray-700 font-semibold flex items-center">
+                                  <span className="mr-2">⏳</span>
+                                  Saldo Pendente:
+                                </span>
+                                <span className={`font-bold ${
+                                  appointment.payment_total_appointment - appointment.total_amount_paid > 0
+                                    ? 'text-orange-600'
+                                    : 'text-green-600'
+                                }`}>
+                                  R$ {(appointment.payment_total_appointment - appointment.total_amount_paid).toFixed(2)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Serviços */}
                       <div className="mb-3">
-                        <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide">💄 Serviços:</div>
+                        <div className="text-xs font-medium text-gray-700 mb-1 uppercase tracking-wide flex items-start">
+                          <span className="mr-2 flex-shrink-0">💄</span>
+                          <span>Serviços:</span>
+                        </div>
                         <div className="space-y-2">
                           {appointment.appointment_services?.map((service, index) => (
                             <div key={index} className="bg-white px-3 py-2 rounded border border-gray-200">

@@ -16,6 +16,7 @@ interface CalendarAppointment {
   appointment_services: any[]
   total_duration_minutes: number | null
   payment_total_service: number | null
+  payment_total_appointment: number | null
   payment_down_payment_paid: number | null
   payment_down_payment_expected: number | null
   total_amount_paid: number | null
@@ -29,9 +30,6 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
   const [selectedDateAppointments, setSelectedDateAppointments] = useState<CalendarAppointment[]>([])
   const [viewMode, setViewMode] = useState<'month' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date())
-  const [editingAppointment, setEditingAppointment] = useState<string | null>(null)
-  const [editTotalValue, setEditTotalValue] = useState<string>('')
-  const [editDownPayment, setEditDownPayment] = useState<string>('')
 
   // Carregar agendamentos do mês atual
   useEffect(() => {
@@ -58,6 +56,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           status,
           total_duration_minutes,
           payment_total_service,
+          payment_total_appointment,
           payment_down_payment_paid,
           payment_down_payment_expected,
           total_amount_paid,
@@ -189,58 +188,6 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
     const dayAppointments = getDayAppointments(date)
     setSelectedDate(date)
     setSelectedDateAppointments(dayAppointments)
-  }
-
-  // Iniciar edição de valores de pagamento
-  const startEditingPayment = (appointment: CalendarAppointment) => {
-    if (appointment.status === 'cancelled') {
-      alert('Não é possível editar valores de agendamentos cancelados.')
-      return
-    }
-    setEditingAppointment(appointment.id)
-    setEditTotalValue(appointment.payment_total_service?.toString() || '0')
-    setEditDownPayment(appointment.payment_down_payment_expected?.toString() || '0')
-  }
-
-  // Salvar alterações dos valores
-  const savePaymentChanges = async (appointmentId: string) => {
-    try {
-      const totalValue = parseFloat(editTotalValue) || 0
-      const downPayment = parseFloat(editDownPayment) || 0
-
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          payment_total_service: totalValue,
-          payment_down_payment_expected: downPayment,
-          last_edited_at: new Date().toISOString(),
-          edited_by: user?.id
-        })
-        .eq('id', appointmentId)
-        .eq('user_id', user?.id)
-
-      if (error) throw error
-
-      // Recarregar agendamentos
-      await loadMonthAppointments()
-
-      // Fechar modo de edição
-      setEditingAppointment(null)
-      setEditTotalValue('')
-      setEditDownPayment('')
-
-      alert('Valores atualizados com sucesso!')
-    } catch (error) {
-      console.error('Erro ao salvar alterações:', error)
-      alert('Erro ao salvar alterações. Tente novamente.')
-    }
-  }
-
-  // Cancelar edição
-  const cancelEditing = () => {
-    setEditingAppointment(null)
-    setEditTotalValue('')
-    setEditDownPayment('')
   }
 
   const calendarDays = generateCalendarDays()
@@ -527,9 +474,9 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                                         </span>
                                       )}
                                     </div>
-                                    {appointment.payment_total_service && (
+                                    {appointment.payment_total_appointment && (
                                       <div className="text-xs mt-1 font-medium">
-                                        💰 R$ {appointment.payment_total_service.toFixed(2)}
+                                        💰 R$ {appointment.payment_total_appointment.toFixed(2)}
                                       </div>
                                     )}
                                   </div>
@@ -641,99 +588,130 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                         </div>
                         <div className="space-y-2">
                           <div className="text-gray-700">
-                            <div className="flex items-center mb-2">
-                              <span className="mr-2">💄</span>
-                              <span className="font-medium">Serviços:</span>
-                            </div>
-                            <div className="ml-6 space-y-1">
-                              {appointment.appointment_services && appointment.appointment_services.length > 0 ? (
-                                appointment.appointment_services.map((service, index) => (
-                                  <div key={index} className="text-sm">
-                                    • {service.services?.name || 'Serviço'}
-                                    {service.quantity > 1 && ` (${service.quantity}x)`}
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-sm text-gray-500">Nenhum serviço informado</div>
-                              )}
+                            <div className="flex items-start mb-2">
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium block mb-1">💄 Serviços:</span>
+                                <div className="space-y-1">
+                                  {appointment.appointment_services && appointment.appointment_services.length > 0 ? (
+                                    appointment.appointment_services.map((service, index) => (
+                                      <div key={index} className="text-sm text-gray-600 flex items-start">
+                                        <span className="mr-1 flex-shrink-0">•</span>
+                                        <span>{service.services?.name || 'Serviço'}
+                                        {service.quantity > 1 && ` (${service.quantity}x)`}</span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-sm text-gray-500">Nenhum serviço informado</div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                          {appointment.payment_total_service && (
+                          {/* Informações de Pagamento */}
+                          {appointment.payment_total_appointment !== null && 
+                           appointment.payment_total_appointment !== undefined && 
+                           appointment.payment_total_appointment > 0 && (
                             <div className="text-gray-700">
-                              {editingAppointment === appointment.id ? (
-                                <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      💰 Valor Total (R$)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      step="0.01"
-                                      min="0"
-                                      value={editTotalValue}
-                                      onChange={(e) => setEditTotalValue(e.target.value)}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="0.00"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      💵 Valor da Entrada (R$)
-                                    </label>
-                                    <input
-                                      type="number"
-                                      step="0.01"
-                                      min="0"
-                                      value={editDownPayment}
-                                      onChange={(e) => setEditDownPayment(e.target.value)}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="0.00"
-                                    />
-                                  </div>
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => savePaymentChanges(appointment.id)}
-                                      className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
-                                    >
-                                      ✅ Salvar
-                                    </button>
-                                    <button
-                                      onClick={cancelEditing}
-                                      className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
-                                    >
-                                      ❌ Cancelar
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="space-y-2">
-                                  <div className="flex items-center">
+                              <div className="space-y-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                                {/* Valor Total do Atendimento */}
+                                <div className="flex items-center justify-between">
+                                  <span className="mr-2 text-gray-700 font-medium flex items-center">
                                     <span className="mr-2">💰</span>
-                                    <span className="font-bold text-green-600">R$ {appointment.payment_total_service.toFixed(2)}</span>
-                                    {appointment.status !== 'cancelled' && (
-                                      <button
-                                        onClick={() => startEditingPayment(appointment)}
-                                        className="ml-2 text-blue-500 hover:text-blue-700 text-sm"
-                                        title="Editar valores"
-                                      >
-                                        ✏️
-                                      </button>
-                                    )}
-                                  </div>
-                                  {appointment.payment_down_payment_expected && appointment.payment_down_payment_expected > 0 && (
-                                    <div className="flex items-center text-sm">
-                                      <span className="mr-2">💵</span>
-                                      <span className="text-blue-600">Entrada: R$ {appointment.payment_down_payment_expected.toFixed(2)}</span>
-                                    </div>
-                                  )}
-                                  {appointment.payment_down_payment_paid && appointment.payment_down_payment_paid > 0 && (
-                                    <div className="flex items-center text-sm">
-                                      <span className="mr-2">✅</span>
-                                      <span className="text-green-600">Entrada paga: R$ {appointment.payment_down_payment_paid.toFixed(2)}</span>
-                                    </div>
-                                  )}
+                                    Valor Total:
+                                  </span>
+                                  <span className="font-bold text-green-600 text-lg">
+                                    R$ {appointment.payment_total_appointment.toFixed(2)}
+                                  </span>
                                 </div>
-                              )}
+
+                                {/* Valor dos Serviços (se diferente do total) */}
+                                {appointment.payment_total_service && 
+                                 appointment.payment_total_service !== appointment.payment_total_appointment && (
+                                  <div className="flex items-center justify-between text-sm pt-2 border-t border-green-200">
+                                    <span className="text-gray-600 flex items-center">
+                                      <span className="mr-2">💄</span>
+                                      Serviços:
+                                    </span>
+                                    <span className="text-gray-700 font-medium">
+                                      R$ {appointment.payment_total_service.toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Taxa de Deslocamento (calculada) */}
+                                {appointment.payment_total_service && 
+                                 appointment.payment_total_service !== appointment.payment_total_appointment && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 flex items-center">
+                                      <span className="mr-2">🚗</span>
+                                      Taxa de Deslocamento:
+                                    </span>
+                                    <span className="text-orange-600 font-medium">
+                                      R$ {(appointment.payment_total_appointment - appointment.payment_total_service).toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Entrada Esperada */}
+                                {/* {appointment.payment_down_payment_expected && 
+                                 appointment.payment_down_payment_expected > 0 && (
+                                  <div className="flex items-center justify-between text-sm pt-2 border-t border-green-200">
+                                    <span className="text-gray-600 flex items-center">
+                                      <span className="mr-2">💵</span>
+                                      Entrada Esperada:
+                                    </span>
+                                    <span className="text-blue-600 font-medium">
+                                      R$ {appointment.payment_down_payment_expected.toFixed(2)}
+                                    </span>
+                                  </div>
+                                )} */}
+
+                                {/* Entrada Paga */}
+                                {appointment.payment_down_payment_paid !== undefined && 
+                                 appointment.payment_down_payment_paid > 0 && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 flex items-center">
+                                      <span className="mr-2">💰</span>
+                                      Entrada Paga:
+                                    </span>
+                                    <span className="text-blue-700 font-bold">
+                                      R$ {appointment.payment_down_payment_paid.toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Total Já Pago */}
+                                {appointment.total_amount_paid !== undefined && 
+                                 appointment.total_amount_paid > 0 && (
+                                  <div className="flex items-center justify-between text-sm pt-2 border-t border-green-200">
+                                    <span className="text-gray-600 flex items-center">
+                                      <span className="mr-2">✅</span>
+                                      Total Já Pago:
+                                    </span>
+                                    <span className="text-green-600 font-bold">
+                                      R$ {appointment.total_amount_paid.toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Valor Pendente */}
+                                {appointment.payment_total_appointment && 
+                                 appointment.total_amount_paid !== undefined && (
+                                  <div className="flex items-center justify-between pt-2 border-t border-green-200">
+                                    <span className="text-gray-700 font-semibold flex items-center">
+                                      <span className="mr-2">⏳</span>
+                                      Saldo Pendente:
+                                    </span>
+                                    <span className={`font-bold text-lg ${
+                                      appointment.payment_total_appointment - appointment.total_amount_paid > 0
+                                        ? 'text-orange-600'
+                                        : 'text-green-600'
+                                    }`}>
+                                      R$ {(appointment.payment_total_appointment - appointment.total_amount_paid).toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>

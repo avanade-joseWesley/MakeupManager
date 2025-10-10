@@ -373,37 +373,30 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     lines.push(`Telefone: ${clientPhone}`)
     lines.push('')
 
-    if (useManualPrice && manualPrice) {
-      const manualValue = parseFloat(manualPrice.replace(',', '.')) || 0
-      lines.push('💰 *ATENDIMENTO PERSONALIZADO*')
-      lines.push(`Valor definido especialmente: *R$ ${manualValue.toFixed(2)}*`)
-      lines.push('• Ajustado conforme necessidades específicas do evento.')
-      lines.push('')
-    } else {
-      lines.push('💄 *SERVIÇOS SOLICITADOS*')
+    // Sempre mostrar os serviços, independente se é valor manual ou não
+    lines.push('💄 *SERVIÇOS SOLICITADOS*')
 
-      // Não detalhar preços individuais dos serviços em nenhum caso
-      calculatedPrices.services.forEach((service, index) => {
-        const serviceInfo = services.find(s => s.id === service.serviceId)
+    // Mostrar detalhes de cada serviço com preços
+    calculatedPrices.services.forEach((service, index) => {
+      const serviceInfo = services.find(s => s.id === service.serviceId)
+      const regionalPrice = regionalPrices.find(
+        rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
+      )
+      const unitPrice = regionalPrice ? regionalPrice.price : service.unitPrice
+      const serviceTotal = unitPrice * service.quantity
 
-        // DEBUG: Verificar dados do serviço
-        console.log('🔍 Serviço encontrado:', serviceInfo)
-        console.log('📝 Descrição:', serviceInfo?.description)
-        console.log('✅ Tem descrição válida:', !!(serviceInfo?.description && serviceInfo.description.trim() !== ''))
+      const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x) - *R$ ${serviceTotal.toFixed(2)}*`
+      lines.push(serviceLine)
 
-        const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x)`
-        lines.push(serviceLine)
+      // Adicionar descrição se existir, logo após o nome do serviço
+      if (serviceInfo?.description && serviceInfo.description.trim() !== '') {
+        lines.push(`   ${serviceInfo.description.trim()}`)
+      }
+    })
 
-        // Adicionar descrição se existir, logo após o nome do serviço
-        if (serviceInfo?.description && serviceInfo.description.trim() !== '') {
-          lines.push(`   ${serviceInfo.description.trim()}`)
-        }
-      })
-
-      lines.push('')
-      lines.push(`📍 *LOCAL DO ATENDIMENTO:* ${area?.name || 'Não informado'}`)
-      lines.push('')
-    }
+    lines.push('')
+    lines.push(`📍 *LOCAL DO ATENDIMENTO:* ${area?.name || 'Não informado'}`)
+    lines.push('')
 
     const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
     const travelFeeValue = includeTravelFee && !hasAnyRegionalPrice && area ? area.travel_fee : 0
@@ -414,7 +407,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     lines.push('💰 *DETALHES DO ORÇAMENTO*')
 
     if (useManualPrice && manualPrice) {
-      lines.push(`• Valor personalizado do atendimento: *R$ ${finalTotal.toFixed(2)}*`)
+      lines.push(`• *Valor personalizado do atendimento: R$ ${finalTotal.toFixed(2)}*`)
       lines.push('• Ajustado conforme necessidades específicas do evento.')
     } else {
       // lines.push(`• Subtotal dos serviços: ${formatCurrency(servicesTotal)}`)

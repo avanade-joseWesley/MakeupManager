@@ -229,168 +229,84 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
       </div>
 
       {viewMode === 'month' ? (
-        <>
-          {/* Navegação do mês */}
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <button
-              onClick={() => navigateMonth('prev')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span className="text-xl">‹</span>
-            </button>
-
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 text-center">
-              {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-            </h2>
-
-            <button
-              onClick={() => navigateMonth('next')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span className="text-xl">›</span>
-            </button>
-          </div>
-
-          {/* Dias da semana */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-              <div key={day} className="p-1 sm:p-2 text-center text-xs sm:text-sm font-medium text-gray-600">
-                <span className="hidden sm:inline">{day}</span>
-                <span className="sm:hidden">{day.slice(0, 1)}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Grid do calendário */}
-          <div className="grid grid-cols-7 gap-1 bg-white rounded-lg border border-gray-200 p-1 sm:p-2">
-            {calendarDays.map((date, index) => {
-              const dayAppointments = getDayAppointments(date)
-              const isCurrentMonth = date.getMonth() === currentDate.getMonth()
-              const isToday = date.toDateString() === new Date().toDateString()
-
-              return (
-                <div
-                  key={index}
-                  onClick={() => selectDayForView(date)}
-                  className={`
-                    min-h-[80px] sm:min-h-[100px] p-1 sm:p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors
-                    ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
-                    ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}
-                  `}
-                >
-                  <div className={`text-xs sm:text-sm font-medium mb-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>
-                    {date.getDate()}
-                  </div>
-
-                  {/* Atendimentos do dia */}
-                  <div className="space-y-1">
-                    {dayAppointments.slice(0, 2).map((appointment, aptIndex) => (
-                      <div
-                        key={appointment.id}
-                        className={`text-xs p-1 rounded border truncate ${getStatusColor(appointment.status)}`}
-                        title={`${appointment.clients?.name || 'Cliente'} - ${appointment.scheduled_time || 'Horário não definido'}`}
-                      >
-                        <div className="hidden sm:block">
-                          {appointment.scheduled_time && (
-                            <span className="font-medium">{appointment.scheduled_time} </span>
-                          )}
-                          {appointment.clients?.name || 'Cliente'}
-                        </div>
-                        <div className="sm:hidden">
-                          {appointment.clients?.name?.slice(0, 6) || 'Cliente'}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Indicador de mais atendimentos */}
-                    {dayAppointments.length > 2 && (
-                      <div className="text-xs text-gray-500 text-center">
-                        +{dayAppointments.length - 2}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      ) : (
-        <>
-          {/* Visualização Diária com Timeline */}
-          <div className="bg-white rounded-lg border border-gray-200">
-            {/* Header da visualização diária */}
-            <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
+        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-2 sm:py-4">
+          <Container className="space-y-3 sm:space-y-4">
+            {/* Navegação do mês */}
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
               <button
-                onClick={() => navigateDay('prev')}
+                onClick={() => navigateMonth('prev')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <span className="text-xl">‹</span>
               </button>
 
-              <h2 className="text-sm sm:text-xl font-semibold text-gray-800 text-center px-2">
-                {selectedDay ? selectedDay.toLocaleDateString('pt-BR', { 
-                  weekday: 'long', 
-                  day: 'numeric', 
-                  month: 'long',
-                  year: 'numeric'
-                }) : 'Selecione um dia'}
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 text-center">
+                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
               </h2>
 
               <button
-                onClick={() => navigateDay('next')}
+                onClick={() => navigateMonth('next')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <span className="text-xl">›</span>
               </button>
             </div>
 
-            {/* Timeline de horas */}
-            <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto">
-              {dayHours.map(hour => {
-                const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
-                
+            {/* Dias da semana */}
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+                <div key={day} className="p-1 sm:p-2 text-center text-xs sm:text-sm font-medium text-gray-600">
+                  <span className="hidden sm:inline">{day}</span>
+                  <span className="sm:hidden">{day.slice(0, 1)}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Grid do calendário */}
+            <div className="grid grid-cols-7 gap-1 bg-white rounded-lg border border-gray-200 p-1 sm:p-2">
+              {calendarDays.map((date, index) => {
+                const dayAppointments = getDayAppointments(date)
+                const isCurrentMonth = date.getMonth() === currentDate.getMonth()
+                const isToday = date.toDateString() === new Date().toDateString()
+
                 return (
-                  <div key={hour} className="flex border-b border-gray-100">
-                    {/* Hora */}
-                    <div className="w-14 sm:w-20 p-2 sm:p-4 text-xs sm:text-sm font-medium text-gray-600 border-r border-gray-200 bg-gray-50 flex-shrink-0">
-                      {hour.toString().padStart(2, '0')}:00
+                  <div
+                    key={index}
+                    onClick={() => selectDayForView(date)}
+                    className={`
+                      min-h-[80px] sm:min-h-[100px] p-1 sm:p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50 transition-colors
+                      ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
+                      ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}
+                    `}
+                  >
+                    <div className={`text-xs sm:text-sm font-medium mb-1 ${isToday ? 'text-blue-600 font-bold' : ''}`}>
+                      {date.getDate()}
                     </div>
-                    
-                    {/* Atendimentos da hora */}
-                    <div className="flex-1 p-2 min-h-[40px] sm:min-h-[50px]">
-                      {hourAppointments.length === 0 ? (
-                        <div className="h-full flex items-center justify-center text-gray-300 text-xs sm:text-sm">
-                          Nenhum atendimento
+
+                    {/* Atendimentos do dia */}
+                    <div className="space-y-1">
+                      {dayAppointments.slice(0, 2).map((appointment, aptIndex) => (
+                        <div
+                          key={appointment.id}
+                          className={`text-xs p-1 rounded border truncate ${getStatusColor(appointment.status)}`}
+                          title={`${appointment.clients?.name || 'Cliente'} - ${appointment.scheduled_time || 'Horário não definido'}`}
+                        >
+                          <div className="hidden sm:block">
+                            {appointment.scheduled_time && (
+                              <span className="font-medium">{appointment.scheduled_time} </span>
+                            )}
+                            {appointment.clients?.name || 'Cliente'}
+                          </div>
+                          <div className="sm:hidden">
+                            {appointment.clients?.name?.slice(0, 6) || 'Cliente'}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="space-y-2">
-                          {hourAppointments.map(appointment => (
-                            <div
-                              key={appointment.id}
-                              className={`p-2 sm:p-3 rounded-lg border ${getStatusColor(appointment.status)} cursor-pointer hover:shadow-sm transition-shadow`}
-                              onClick={() => openDayDetails(selectedDay!)}
-                            >
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                                <div className="font-medium text-xs sm:text-sm">
-                                  {appointment.clients?.name || 'Cliente'}
-                                </div>
-                                <div className="text-xs opacity-75">
-                                  {appointment.scheduled_time}
-                                </div>
-                              </div>
-                              <div className="text-xs mt-1 opacity-75">
-                                💄 {appointment.appointment_services?.[0]?.services?.name || 'Serviço'}
-                                {appointment.total_duration_minutes && (
-                                  <span className="ml-1 sm:ml-2">⏱️ {formatDuration(appointment.total_duration_minutes)}</span>
-                                )}
-                              </div>
-                              {appointment.payment_total_service && (
-                                <div className="text-xs mt-1 font-medium">
-                                  💰 R$ {appointment.payment_total_service.toFixed(2)}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                      ))}
+
+                      {/* Indicador de mais atendimentos */}
+                      {dayAppointments.length > 2 && (
+                        <div className="text-xs text-gray-500 text-center">
+                          +{dayAppointments.length - 2}
                         </div>
                       )}
                     </div>
@@ -398,8 +314,96 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                 )
               })}
             </div>
-          </div>
-        </>
+          </Container>
+        </div>
+      ) : (
+        <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-2 sm:py-4">
+          <Container className="space-y-3 sm:space-y-4">
+            {/* Visualização Diária com Timeline */}
+            <div className="bg-white rounded-lg border border-gray-200">
+              {/* Header da visualização diária */}
+              <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
+                <button
+                  onClick={() => navigateDay('prev')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <span className="text-xl">‹</span>
+                </button>
+
+                <h2 className="text-sm sm:text-xl font-semibold text-gray-800 text-center px-2">
+                  {selectedDay ? selectedDay.toLocaleDateString('pt-BR', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long',
+                    year: 'numeric'
+                  }) : 'Selecione um dia'}
+                </h2>
+
+                <button
+                  onClick={() => navigateDay('next')}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <span className="text-xl">›</span>
+                </button>
+              </div>
+
+              {/* Timeline de horas */}
+              <div className="max-h-[300px] sm:max-h-[400px] overflow-y-auto">
+                {dayHours.map(hour => {
+                  const hourAppointments = selectedDay ? getHourAppointments(selectedDay, hour) : []
+                  
+                  return (
+                    <div key={hour} className="flex border-b border-gray-100">
+                      {/* Hora */}
+                      <div className="w-14 sm:w-20 p-2 sm:p-4 text-xs sm:text-sm font-medium text-gray-600 border-r border-gray-200 bg-gray-50 flex-shrink-0">
+                        {hour.toString().padStart(2, '0')}:00
+                      </div>
+                      
+                      {/* Atendimentos da hora */}
+                      <div className="flex-1 p-2 min-h-[40px] sm:min-h-[50px]">
+                        {hourAppointments.length === 0 ? (
+                          <div className="h-full flex items-center justify-center text-gray-300 text-xs sm:text-sm">
+                            Nenhum atendimento
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {hourAppointments.map(appointment => (
+                              <div
+                                key={appointment.id}
+                                className={`p-2 sm:p-3 rounded-lg border ${getStatusColor(appointment.status)} cursor-pointer hover:shadow-sm transition-shadow`}
+                                onClick={() => openDayDetails(selectedDay!)}
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                  <div className="font-medium text-xs sm:text-sm">
+                                    {appointment.clients?.name || 'Cliente'}
+                                  </div>
+                                  <div className="text-xs opacity-75">
+                                    {appointment.scheduled_time}
+                                  </div>
+                                </div>
+                                <div className="text-xs mt-1 opacity-75">
+                                  💄 {appointment.appointment_services?.[0]?.services?.name || 'Serviço'}
+                                  {appointment.total_duration_minutes && (
+                                    <span className="ml-1 sm:ml-2">⏱️ {formatDuration(appointment.total_duration_minutes)}</span>
+                                  )}
+                                </div>
+                                {appointment.payment_total_service && (
+                                  <div className="text-xs mt-1 font-medium">
+                                    💰 R$ {appointment.payment_total_service.toFixed(2)}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </Container>
+        </div>
       )}
 
       {/* Modal de detalhes do dia */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, formatDuration } from '../lib/supabase'
+import { supabase, formatDuration, formatDate, formatDateTime } from '../lib/supabase'
 import { WhatsAppButton } from './WhatsAppButton'
 import { Settings } from './Settings'
 import { PriceCalculator } from './PriceCalculator'
@@ -590,7 +590,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                   </div>
                   <div className="flex justify-between items-center text-xs text-gray-500">
                     <span>🕐 {appointment.scheduled_date ? 
-                      new Date(appointment.scheduled_date).toLocaleDateString('pt-BR') : 'Data não definida'
+                      formatDateTime(appointment.scheduled_date, appointment.scheduled_time) : 'Data não definida'
                     }{appointment.scheduled_time ? `, ${appointment.scheduled_time}` : ''}</span>
                     <div className="flex items-center space-x-2">
                       {appointment.total_duration_minutes && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { supabase, formatDuration } from '../lib/supabase'
+import { supabase, formatDuration, formatDate, formatDateTime } from '../lib/supabase'
 import NumericInput from './NumericInput'
 
 interface PriceCalculatorProps {
@@ -1341,7 +1341,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                               </div>
                               <div className="text-xs text-gray-500 mt-1">
                                 📏 {(pdf.size / 1024 / 1024).toFixed(2)} MB • 
-                                � {new Date(pdf.created_at).toLocaleDateString('pt-BR')}
+                                📅 {formatDate(pdf.created_at)}
                               </div>
                             </div>
                           </div>
@@ -1715,7 +1715,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                     {isAppointmentConfirmed && appointmentAddress && (
                       <>
                         <div><strong>🏠 Endereço:</strong> {appointmentAddress}</div>
-                        <div><strong>📅 Data:</strong> {appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</div>
+                        <div><strong>📅 Data:</strong> {appointmentDate ? formatDate(appointmentDate) : 'Não definida'}</div>
                         <div><strong>⏰ Horário:</strong> {appointmentTime || 'Não definido'}</div>
                       </>
                     )}
@@ -1829,7 +1829,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">📅 Data:</span>
-                    <span className="truncate ml-1 text-xs">{appointmentDate ? new Date(appointmentDate).toLocaleDateString('pt-BR') : 'Não definida'}</span>
+                    <span className="truncate ml-1 text-xs">{appointmentDate ? formatDate(appointmentDate) : 'Não definida'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">⏰ Horário:</span>
@@ -1973,7 +1973,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                               📄 {pdf.name}
                             </div>
                             <div className="text-sm text-gray-600">
-                              📏 {(pdf.size / 1024 / 1024).toFixed(2)} MB • 📅 {new Date(pdf.created_at).toLocaleDateString('pt-BR')}
+                              📏 {(pdf.size / 1024 / 1024).toFixed(2)} MB • 📅 {formatDate(pdf.created_at)}
                             </div>
                           </div>
                         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, formatDate, formatDateTime } from '../lib/supabase'
 import { WhatsAppButton } from './WhatsAppButton'
 
 interface PDFManagerProps {
@@ -231,17 +231,6 @@ export function PDFManager({ user }: PDFManagerProps) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  // Formatar data
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   useEffect(() => {
     loadPDFs()
     loadClients()
@@ -358,7 +347,7 @@ export function PDFManager({ user }: PDFManagerProps) {
                       📄 {pdf.name}
                     </div>
                     <div className="text-sm text-gray-600">
-                      📏 {formatFileSize(pdf.size)} • 📅 {formatDate(pdf.created_at)}
+                      📏 {formatFileSize(pdf.size)} • 📅 {formatDateTime(pdf.created_at)}
                     </div>
                   </div>
 

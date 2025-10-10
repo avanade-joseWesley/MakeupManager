@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, formatDuration } from '../lib/supabase'
+import { supabase, formatDuration, formatDate, formatDateTime } from '../lib/supabase'
 import { Container } from './Container'
 
 interface CalendarPageProps {
@@ -300,7 +300,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
               </button>
 
               <h2 className="text-lg sm:text-xl font-bold text-gray-800 text-center bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                {formatDate(currentDate, { month: 'long', year: 'numeric' })}
               </h2>
 
               <button
@@ -435,7 +435,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
 
                   <h2 className="text-lg font-bold flex items-center">
                     <span className="mr-2">📅</span>
-                    {selectedDay ? selectedDay.toLocaleDateString('pt-BR', {
+                    {selectedDay ? formatDate(selectedDay, {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',
@@ -569,7 +569,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg sm:text-xl font-bold flex items-center">
                   <span className="mr-2">📅</span>
-                  Atendimentos de {selectedDate.toLocaleDateString('pt-BR')}
+                  Atendimentos de {formatDate(selectedDate)}
                 </h3>
                 <button
                   onClick={() => setSelectedDate(null)}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase, formatDuration } from '../lib/supabase'
+import { supabase, formatDuration, formatDate, formatDateTime } from '../lib/supabase'
 import { Container } from './Container'
 
 interface AppointmentsPageProps {
@@ -179,7 +179,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Não definido'
-    return new Date(dateString).toLocaleDateString('pt-BR')
+    return formatDate(dateString)
   }
 
   const formatTime = (timeString: string | null) => {
@@ -293,7 +293,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
 
 👤 *Cliente:* ${appointment.client.name}
 💄 *Serviço:* ${appointment.appointment_services?.map(s => `${s.quantity}x ${s.service?.name}`).join(', ') || 'Serviços'}
-📅 *Data:* ${appointment.scheduled_date ? new Date(appointment.scheduled_date).toLocaleDateString('pt-BR') : 'Não definida'}
+📅 *Data:* ${appointment.scheduled_date ? formatDate(appointment.scheduled_date) : 'Não definida'}
 ⏰ *Horário:* ${appointment.scheduled_time || 'Não definido'}
 📍 *Local:* ${appointment.appointment_address || 'A combinar'}
 💰 *Valor Total:* R$ ${appointment.payment_total_service.toFixed(2)}
@@ -521,8 +521,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
 
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                           <div className="text-sm text-gray-600 mb-1 sm:mb-0">
-                            📅 {formatDate(appointment.scheduled_date)}
-                            {appointment.scheduled_time && ` às ${formatTime(appointment.scheduled_time)}`}
+                            📅 {formatDateTime(appointment.scheduled_date, appointment.scheduled_time)}
                             {appointment.total_duration_minutes !== undefined && appointment.total_duration_minutes !== null && (
                               <span className="ml-2 text-blue-600 font-medium">
                                 ⏱️ {formatDuration(appointment.total_duration_minutes)}
@@ -672,7 +671,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
 
                       {/* Informações Adicionais */}
                       <div className="text-xs text-gray-500 bg-white px-3 py-2 rounded border border-gray-200">
-                        Criado em {new Date(appointment.created_at).toLocaleDateString('pt-BR')} às {new Date(appointment.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        Criado em {formatDate(appointment.created_at)} às {new Date(appointment.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   )}

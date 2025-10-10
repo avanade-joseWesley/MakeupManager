@@ -242,3 +242,36 @@ export const formatDuration = (totalMinutes: number): string => {
 
   return `${minutes}min`
 }
+
+// Função centralizada para formatação de datas
+export const formatDate = (dateString: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions): string => {
+  if (!dateString) return 'Não definida'
+  
+  try {
+    // Se já for uma string de data no formato brasileiro, retorna como está
+    if (typeof dateString === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) {
+      return dateString
+    }
+    
+    // Converte para Date e formata
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString
+    if (isNaN(date.getTime())) {
+      return 'Data inválida'
+    }
+    
+    return date.toLocaleDateString('pt-BR', options)
+  } catch (error) {
+    console.warn('Erro ao formatar data:', dateString, error)
+    return 'Data inválida'
+  }
+}
+
+// Função para formatação de data e hora
+export const formatDateTime = (dateString: string | null | undefined, timeString?: string | null): string => {
+  const date = formatDate(dateString)
+  if (!timeString || date === 'Não definida' || date === 'Data inválida') {
+    return date
+  }
+  
+  return `${date} às ${timeString}`
+}

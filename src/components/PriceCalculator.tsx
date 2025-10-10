@@ -761,6 +761,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           payment_down_payment_paid: downPaymentPaid,
           payment_total_service: totalServiceValue,
           payment_status: finalPaymentStatus,
+          total_amount_paid: downPaymentPaid, // Novo campo - valor já pago
 
           // Tempo total do atendimento
           total_duration_minutes: totalDurationMinutes,

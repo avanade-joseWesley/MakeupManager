@@ -18,6 +18,7 @@ interface CalendarAppointment {
   payment_total_service: number | null
   payment_down_payment_paid: number | null
   payment_down_payment_expected: number | null
+  total_amount_paid: number | null
 }
 
 export default function CalendarPage({ user, onBack }: CalendarPageProps) {
@@ -59,6 +60,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           payment_total_service,
           payment_down_payment_paid,
           payment_down_payment_expected,
+          total_amount_paid,
           clients!inner (
             name,
             phone

@@ -20,6 +20,7 @@ interface Appointment {
   payment_down_payment_paid: number
   payment_total_service: number
   payment_status: 'pending' | 'paid'
+  total_amount_paid: number
   total_duration_minutes: number
   notes: string | null
   client: any // Simplificar para any por enquanto
@@ -103,6 +104,7 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
           payment_down_payment_paid,
           payment_total_service,
           payment_status,
+          total_amount_paid,
           total_duration_minutes,
           notes,
           client:clients(id, name, phone),
@@ -291,7 +293,8 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
 ⏰ *Horário:* ${appointment.scheduled_time || 'Não definido'}
 📍 *Local:* ${appointment.appointment_address || 'A combinar'}
 💰 *Valor Total:* R$ ${appointment.payment_total_service.toFixed(2)}
-💰 *Valor Pendente:* R$ ${(appointment.payment_total_service - appointment.total_received).toFixed(2)}
+💰 *Valor Pago:* R$ ${appointment.total_amount_paid.toFixed(2)}
+💰 *Valor Pendente:* R$ ${(appointment.payment_total_service - appointment.total_amount_paid).toFixed(2)}
 
 📊 *Status:* ${appointment.status === 'confirmed' ? 'Confirmado' : appointment.status === 'pending' ? 'Aguardando Confirmação' : appointment.status === 'completed' ? 'Realizado' : 'Cancelado'}
 💳 *Pagamento:* ${appointment.payment_status === 'paid' ? 'Pago' : 'Pendente'}
@@ -554,7 +557,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                             ) : (
                               <>
                                 <div className="text-lg font-bold text-orange-600">
-                                  R$ {(appointment.payment_total_service - appointment.payment_down_payment_paid).toFixed(2)}
+                                  R$ {(appointment.payment_total_service - appointment.total_amount_paid).toFixed(2)}
                                 </div>
                                 <div className="text-xs text-gray-500">
                                   Pendente

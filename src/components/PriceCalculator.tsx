@@ -376,16 +376,11 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     // Sempre mostrar os serviços, independente se é valor manual ou não
     lines.push('💄 *SERVIÇOS SOLICITADOS*')
 
-    // Mostrar detalhes de cada serviço com preços
+    // Mostrar apenas os nomes dos serviços (sem preços individuais)
     calculatedPrices.services.forEach((service, index) => {
       const serviceInfo = services.find(s => s.id === service.serviceId)
-      const regionalPrice = regionalPrices.find(
-        rp => rp.service_id === service.serviceId && rp.service_area_id === selectedArea
-      )
-      const unitPrice = regionalPrice ? regionalPrice.price : service.unitPrice
-      const serviceTotal = unitPrice * service.quantity
 
-      const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x) - *R$ ${serviceTotal.toFixed(2)}*`
+      const serviceLine = `${index + 1}. ${serviceInfo?.name || 'Serviço'} (${service.quantity}x)`
       lines.push(serviceLine)
 
       // Adicionar descrição se existir, logo após o nome do serviço
@@ -395,7 +390,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
     })
 
     lines.push('')
-    lines.push(`📍 *LOCAL DO ATENDIMENTO:* ${area?.name || 'Não informado'}`)
+    lines.push(`📍 *LOCAL DO ATENDIMENTO:* ${area?.name.toLocaleUpperCase() || 'Não informado'}`)
     lines.push('')
 
     const servicesTotal = calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)

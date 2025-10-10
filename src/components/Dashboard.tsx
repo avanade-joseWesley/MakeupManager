@@ -6,6 +6,7 @@ import { PriceCalculator } from './PriceCalculator'
 import ClientsPage from './ClientsPage'
 import AppointmentsPage from './AppointmentsPage'
 import { PDFManager } from './PDFManager'
+import CalendarPage from './CalendarPage'
 import { Container } from './Container'
 
 interface DashboardProps {
@@ -16,7 +17,7 @@ interface DashboardProps {
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [message, setMessage] = useState('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments' | 'pdfs'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments' | 'pdfs' | 'calendar'>('dashboard')
   
   // Estado para filtros de agendamento
   const [appointmentFilters, setAppointmentFilters] = useState<{
@@ -360,6 +361,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     )
   }
 
+  if (currentView === 'calendar') {
+    return <CalendarPage onBack={() => setCurrentView('dashboard')} user={user} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-2">
       <Container className="space-y-3">
@@ -420,7 +425,13 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             <div className="text-2xl mb-1">⚙️</div>
             <div className="text-xs font-semibold">Config</div>
           </button>
-          <div></div> {/* Espaço vazio para manter o layout */}
+          <button
+            onClick={() => setCurrentView('calendar')}
+            className="bg-gradient-to-br from-cyan-400 to-blue-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
+          >
+            <div className="text-2xl mb-1">📅</div>
+            <div className="text-xs font-semibold">Calendário</div>
+          </button>
         </div>
 
         {/* Cards de Status */}

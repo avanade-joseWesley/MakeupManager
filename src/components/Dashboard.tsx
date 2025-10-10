@@ -77,8 +77,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           )
         `)
         .eq('user_id', user.id)
-        .gte('scheduled_date', startOfToday.toISOString().split('T')[0])
-        .lte('scheduled_date', endOfToday.toISOString().split('T')[0])
+        .gte('scheduled_date', startOfToday.toLocaleDateString('sv-SE'))
+        .lte('scheduled_date', endOfToday.toLocaleDateString('sv-SE'))
 
       if (todayError) throw todayError
 
@@ -149,7 +149,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         .from('appointments')
         .select('id, scheduled_date, status')
         .eq('user_id', user.id)
-        .lt('scheduled_date', new Date().toISOString().split('T')[0])
+        .lt('scheduled_date', new Date().toLocaleDateString('sv-SE'))
         .or('status.eq.confirmed,status.eq.pending')
 
       if (overdueError) throw overdueError
@@ -202,7 +202,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           )
         `)
         .eq('user_id', user.id)
-        .gte('scheduled_date', new Date().toISOString().split('T')[0])
+        .gte('scheduled_date', new Date().toLocaleDateString('sv-SE'))
         .order('scheduled_date', { ascending: true })
         .order('scheduled_time', { ascending: true })
         .limit(5)
@@ -591,7 +591,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                   <div className="flex justify-between items-center text-xs text-gray-500">
                     <span>🕐 {appointment.scheduled_date ? 
                       formatDateTime(appointment.scheduled_date, appointment.scheduled_time) : 'Data não definida'
-                    }{appointment.scheduled_time ? `, ${appointment.scheduled_time}` : ''}</span>
+                    }</span>
                     <div className="flex items-center space-x-2">
                       {appointment.total_duration_minutes && (
                         <span className="text-blue-600">⏱️ {formatDuration(appointment.total_duration_minutes)}</span>

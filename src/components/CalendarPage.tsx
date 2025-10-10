@@ -70,8 +70,8 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           )
         `)
         .eq('user_id', user.id)
-        .gte('scheduled_date', firstDay.toISOString().split('T')[0])
-        .lte('scheduled_date', lastDay.toISOString().split('T')[0])
+        .gte('scheduled_date', firstDay.toLocaleDateString('sv-SE'))
+        .lte('scheduled_date', lastDay.toLocaleDateString('sv-SE'))
         .order('scheduled_date', { ascending: true })
         .order('scheduled_time', { ascending: true })
 
@@ -147,7 +147,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
 
   // Obter agendamentos de um dia específico
   const getDayAppointments = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = date.toLocaleDateString('sv-SE')
     return appointments.filter(apt => apt.scheduled_date === dateStr)
   }
 
@@ -173,7 +173,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
 
   // Obter agendamentos de uma hora específica
   const getHourAppointments = (date: Date, hour: number) => {
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = date.toLocaleDateString('sv-SE')
     return appointments.filter(apt => {
       if (apt.scheduled_date !== dateStr || !apt.scheduled_time) return false
       

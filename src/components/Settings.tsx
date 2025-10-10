@@ -489,7 +489,7 @@ export function Settings({ user, onBack }: SettingsProps) {
       console.log('Tentando remover serviço com ID:', id)
 
       // Verificar se o serviço está sendo usado em agendamentos FUTUROS
-      const today = new Date().toISOString().split('T')[0] // Data de hoje no formato YYYY-MM-DD
+      const today = new Date().toLocaleDateString('sv-SE') // Data de hoje no formato YYYY-MM-DD
 
       const { data: futureAppointmentsUsingService, error: checkError } = await supabase
         .from('appointment_services')
@@ -560,7 +560,7 @@ export function Settings({ user, onBack }: SettingsProps) {
       console.log('Tentando remover categoria com ID:', id)
 
       // Primeiro, verificar se algum serviço desta categoria está sendo usado em agendamentos FUTUROS
-      const today = new Date().toISOString().split('T')[0] // Data de hoje no formato YYYY-MM-DD
+      const today = new Date().toLocaleDateString('sv-SE') // Data de hoje no formato YYYY-MM-DD
 
       const { data: servicesInCategory, error: servicesError } = await supabase
         .from('services')

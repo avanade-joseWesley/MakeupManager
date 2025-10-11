@@ -170,6 +170,20 @@ export function PriceCalculator({ user, initialDate, initialTime, initialStatus,
     loadData()
   }, [])
 
+  // Sincronizar campos quando as props iniciais mudarem
+  useEffect(() => {
+    if (initialDate) {
+      setAppointmentDate(initialDate)
+    }
+    if (initialTime) {
+      // Apenas setar appointmentTime - o useEffect abaixo vai cuidar de splittar em hour/minute
+      setAppointmentTime(initialTime)
+    }
+    if (initialStatus === 'confirmed') {
+      setIsAppointmentConfirmed(true)
+    }
+  }, [initialDate, initialTime, initialStatus])
+
   const loadData = async () => {
     if (!user || !user.id) return
     
@@ -1700,40 +1714,54 @@ export function PriceCalculator({ user, initialDate, initialTime, initialStatus,
                       />
                     </div>
 
-                    <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-violet-100">
-                      <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
-                        <span className="mr-1 sm:mr-2">⏰</span>
-                        Horário *
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <select
-                          value={appointmentHour}
-                          onChange={(e) => setAppointmentHour(e.target.value)}
-                          className="px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
-                        >
-                          <option value="">Hora</option>
-                          {Array.from({ length: 24 }, (_, i) => {
-                            const hour = i.toString().padStart(2, '0')
-                            return (
-                              <option key={hour} value={hour}>
-                                {hour}
-                              </option>
-                            )
-                          })}
-                        </select>
-                        <select
-                          value={appointmentMinute}
-                          onChange={(e) => setAppointmentMinute(e.target.value)}
-                          className="px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
-                        >
-                          <option value="">Min</option>
-                          <option value="00">00</option>
-                          <option value="15">15</option>
-                          <option value="30">30</option>
-                          <option value="45">45</option>
-                        </select>
+                    {/* Mostrar campo de horário apenas se NÃO vier do calendário */}
+                    {!initialTime ? (
+                      <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-violet-100">
+                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                          <span className="mr-1 sm:mr-2">⏰</span>
+                          Horário *
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            value={appointmentHour}
+                            onChange={(e) => setAppointmentHour(e.target.value)}
+                            className="px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
+                          >
+                            <option value="">Hora</option>
+                            {Array.from({ length: 24 }, (_, i) => {
+                              const hour = i.toString().padStart(2, '0')
+                              return (
+                                <option key={hour} value={hour}>
+                                  {hour}
+                                </option>
+                              )
+                            })}
+                          </select>
+                          <select
+                            value={appointmentMinute}
+                            onChange={(e) => setAppointmentMinute(e.target.value)}
+                            className="px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all duration-200 bg-white text-gray-900 text-sm"
+                          >
+                            <option value="">Min</option>
+                            <option value="00">00</option>
+                            <option value="15">15</option>
+                            <option value="30">30</option>
+                            <option value="45">45</option>
+                          </select>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      // Se vier do calendário, mostrar o horário já definido
+                      <div className="bg-gradient-to-r from-violet-50 to-purple-50 p-2 sm:p-3 sm:p-4 rounded-lg sm:rounded-xl sm:rounded-2xl border border-violet-100">
+                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3 flex items-center">
+                          <span className="mr-1 sm:mr-2">⏰</span>
+                          Horário Selecionado
+                        </label>
+                        <div className="px-3 sm:px-4 py-2 sm:py-3 bg-white border-2 border-violet-200 rounded-lg sm:rounded-xl text-violet-800 font-semibold text-sm">
+                          {initialTime}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>
               )}

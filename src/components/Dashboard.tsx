@@ -7,6 +7,7 @@ import ClientsPage from './ClientsPage'
 import AppointmentsPage from './AppointmentsPage'
 import { PDFManager } from './PDFManager'
 import CalendarPage from './CalendarPage'
+import FinancialDashboard from './FinancialDashboard'
 import { Container } from './Container'
 
 interface DashboardProps {
@@ -17,7 +18,7 @@ interface DashboardProps {
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [message, setMessage] = useState('')
-  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments' | 'pdfs' | 'calendar'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments' | 'pdfs' | 'calendar' | 'financial'>('dashboard')
   
   // Estados para dados do agendamento rápido (vindo do calendário)
   const [quickAppointmentData, setQuickAppointmentData] = useState<{
@@ -392,6 +393,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     />
   }
 
+  if (currentView === 'financial') {
+    return <FinancialDashboard onBack={() => setCurrentView('dashboard')} user={user} />
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-purple-50 py-2">
       <Container className="space-y-3">
@@ -458,6 +463,13 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           >
             <div className="text-2xl mb-1">📅</div>
             <div className="text-xs font-semibold">Calendário</div>
+          </button>
+          <button
+            onClick={() => setCurrentView('financial')}
+            className="bg-gradient-to-br from-green-400 to-emerald-600 text-white p-3 rounded-xl shadow-lg active:scale-95 transition-transform"
+          >
+            <div className="text-2xl mb-1">💰</div>
+            <div className="text-xs font-semibold">Financeiro</div>
           </button>
         </div>
 

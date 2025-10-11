@@ -506,6 +506,11 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
         parseFloat(manualPrice.replace(',', '.')) : 
         calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
 
+      // Calcular taxa de deslocamento
+      const area = areas.find(a => a.id === selectedArea)
+      const travelFeeValue = includeTravelFee && area ? area.travel_fee : 0
+      const totalAppointmentValue = totalServiceValue + travelFeeValue
+
       // Criar agendamento não confirmado
       const { data: appointment, error: appointmentError } = await supabase
         .from('appointments')
@@ -520,7 +525,10 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           total_received: 0,
           payment_down_payment_paid: 0,
           payment_total_service: totalServiceValue,
+          travel_fee: travelFeeValue,
+          payment_total_appointment: totalAppointmentValue,
           payment_status: 'pending',
+          is_custom_price: useManualPrice, // Indica se foi usado valor diferenciado
           notes: `Orçamento enviado via WhatsApp - ${calculatedPrices.services.length} serviço(s)`
         })
         .select('id')
@@ -765,9 +773,11 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
           // Campos de pagamento
           payment_down_payment_paid: downPaymentPaid,
           payment_total_service: servicesOnlyValue, // Valor apenas dos serviços
+          travel_fee: travelFee, // Taxa de deslocamento
           payment_total_appointment: totalAppointmentValue, // Valor total (serviços + taxa)
           payment_status: finalPaymentStatus,
           total_amount_paid: downPaymentPaid, // Novo campo - valor já pago
+          is_custom_price: useManualPrice, // Indica se foi usado valor diferenciado
 
           // Tempo total do atendimento
           total_duration_minutes: totalDurationMinutes,
@@ -1574,7 +1584,7 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
                       onChange={(e) => setDownPaymentAmount(e.target.value)}
                       className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200 bg-white text-gray-900 text-sm"
                       placeholder="0.00"
-                      step="0.01"
+                      step="10"
                       min="0"
                     />
                   </div>

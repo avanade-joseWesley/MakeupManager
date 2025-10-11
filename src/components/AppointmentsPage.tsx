@@ -19,10 +19,12 @@ interface Appointment {
   total_received: number
   payment_down_payment_paid: number
   payment_total_service: number
+  travel_fee: number
   payment_total_appointment: number
   payment_status: 'pending' | 'paid'
   total_amount_paid: number
   total_duration_minutes: number
+  is_custom_price: boolean
   notes: string | null
   client: any // Simplificar para any por enquanto
   service_area: any // Simplificar para any por enquanto
@@ -44,7 +46,9 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
     scheduled_time: '',
     notes: '',
     payment_status: 'pending' as 'pending' | 'paid',
-    total_received: 0
+    total_received: 0,
+    payment_total_service: 0,
+    travel_fee: 0
   })
 
   useEffect(() => {
@@ -104,10 +108,12 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
           total_received,
           payment_down_payment_paid,
           payment_total_service,
+          travel_fee,
           payment_total_appointment,
           payment_status,
           total_amount_paid,
           total_duration_minutes,
+          is_custom_price,
           notes,
           client:clients(id, name, phone),
           service_area:service_areas(id, name),
@@ -224,7 +230,9 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
       scheduled_time: appointment.scheduled_time || '',
       notes: appointment.notes || '',
       payment_status: appointment.payment_status,
-      total_received: appointment.total_received
+      total_received: appointment.total_received,
+      payment_total_service: appointment.payment_total_service,
+      travel_fee: appointment.travel_fee
     })
   }
 
@@ -236,7 +244,9 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
       scheduled_time: '',
       notes: '',
       payment_status: 'pending',
-      total_received: 0
+      total_received: 0,
+      payment_total_service: 0,
+      travel_fee: 0
     })
   }
 
@@ -249,6 +259,14 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
       const updatedPaymentStatus = isStatusChangedToCompleted ? 'paid' : editForm.payment_status
       const updatedTotalReceived = isStatusChangedToCompleted ? editingAppointment.payment_total_service : editForm.total_received
 
+      // Verificar se os valores financeiros foram editados
+      const wasServiceValueEdited = editForm.payment_total_service !== editingAppointment.payment_total_service
+      const wasTravelFeeEdited = editForm.travel_fee !== editingAppointment.travel_fee
+      const wasFinancialDataEdited = wasServiceValueEdited || wasTravelFeeEdited
+
+      // Calcular novo valor total do atendimento
+      const newTotalAppointment = editForm.payment_total_service + editForm.travel_fee
+
       const { error } = await supabase
         .from('appointments')
         .update({
@@ -258,6 +276,10 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
           notes: editForm.notes || null,
           payment_status: updatedPaymentStatus,
           total_received: updatedTotalReceived,
+          payment_total_service: editForm.payment_total_service,
+          travel_fee: editForm.travel_fee,
+          payment_total_appointment: newTotalAppointment,
+          is_custom_price: wasFinancialDataEdited ? true : editingAppointment.is_custom_price || false,
           last_edited_at: new Date().toISOString(),
           edited_by: user.id
         })
@@ -627,6 +649,15 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                         <div className="mb-3">
                           <div className="text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">💳 Detalhes de Pagamento:</div>
                           <div className="space-y-2 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                            {/* Badge de Valor Diferenciado */}
+                            {appointment.is_custom_price && (
+                              <div className="mb-2 pb-2 border-b border-green-200">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                                  💎 Valor Personalizado
+                                </span>
+                              </div>
+                            )}
+
                             {/* Valor dos Serviços */}
                             {appointment.payment_total_service && 
                              appointment.payment_total_service !== appointment.payment_total_appointment && (
@@ -642,15 +673,15 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                             )}
 
                             {/* Taxa de Deslocamento */}
-                            {appointment.payment_total_service && 
-                             appointment.payment_total_service !== appointment.payment_total_appointment && (
+                            {appointment.travel_fee !== undefined && 
+                             appointment.travel_fee > 0 && (
                               <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-600 flex items-center">
                                   <span className="mr-2">🚗</span>
                                   Taxa de Deslocamento:
                                 </span>
                                 <span className="text-orange-600 font-medium">
-                                  R$ {(appointment.payment_total_appointment - appointment.payment_total_service).toFixed(2)}
+                                  R$ {appointment.travel_fee.toFixed(2)}
                                 </span>
                               </div>
                             )}
@@ -872,26 +903,96 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                 </select>
               </div>
 
-              {/* Valor Recebido */}
-              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-4 rounded-2xl border border-emerald-100">
-                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                  <span className="mr-2">�</span>
-                  Valor Já Recebido (R$)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={editForm.total_received}
-                    onChange={(e) => setEditForm({...editForm, total_received: parseFloat(e.target.value) || 0})}
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 bg-white text-gray-900"
-                    placeholder="0.00"
-                  />
+              {/* Valores Financeiros - Valor do Serviço, Taxa de Deslocamento e Entrada */}
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-2xl border-2 border-indigo-200">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-semibold text-gray-700 flex items-center">
+                    <span className="mr-2">💰</span>
+                    Valores Financeiros
+                  </label>
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                    {editingAppointment.is_custom_price ? '💎 Valor Personalizado' : '📋 Valor Calculado'}
+                  </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Valor total do agendamento: R$ {editingAppointment.payment_total_service.toFixed(2)}
-                </p>
+
+                <div className="space-y-3">
+                  {/* Valor do Serviço */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">
+                      💄 Valor do Serviço (R$)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        step="10"
+                        value={editForm.payment_total_service}
+                        onChange={(e) => setEditForm({...editForm, payment_total_service: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white text-gray-900 font-medium"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Taxa de Deslocamento */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">
+                      🚗 Taxa de Deslocamento (R$)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        step="10"
+                        value={editForm.travel_fee}
+                        onChange={(e) => setEditForm({...editForm, travel_fee: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white text-gray-900 font-medium"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Total Calculado */}
+                  <div className="pt-3 border-t border-indigo-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-gray-700">💰 Total do Atendimento:</span>
+                      <span className="text-lg font-bold text-indigo-600">
+                        R$ {(editForm.payment_total_service + editForm.travel_fee).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Entrada (Valor Já Recebido) */}
+                  <div className="pt-3 border-t border-indigo-200">
+                    <label className="block text-xs font-medium text-gray-600 mb-2">
+                      💵 Entrada (Valor Já Recebido)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        step="10"
+                        value={editForm.total_received}
+                        onChange={(e) => setEditForm({...editForm, total_received: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white text-gray-900 font-medium"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    {/* Valor Pendente */}
+                    <div className="mt-3 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 p-3 rounded-lg border border-amber-200">
+                      <span className="text-sm font-semibold text-gray-700">💳 Valor Pendente:</span>
+                      <span className="text-lg font-bold text-orange-600">
+                        R$ {((editForm.payment_total_service + editForm.travel_fee) - editForm.total_received).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-xs text-yellow-800">
+                    ⚠️ <strong>Atenção:</strong> Ao editar esses valores, o agendamento será marcado como "Valor Personalizado".
+                  </p>
+                </div>
               </div>
 
               {/* Observações */}

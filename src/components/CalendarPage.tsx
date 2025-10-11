@@ -5,6 +5,7 @@ import { Container } from './Container'
 interface CalendarPageProps {
   user: any
   onBack: () => void
+  onCreateAppointment?: (date: string, time: string) => void
 }
 
 interface CalendarAppointment {
@@ -27,7 +28,7 @@ interface CalendarAppointment {
   notes: string | null
 }
 
-export default function CalendarPage({ user, onBack }: CalendarPageProps) {
+export default function CalendarPage({ user, onBack, onCreateAppointment }: CalendarPageProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
   const [loading, setLoading] = useState(true)
@@ -627,10 +628,25 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                             })}
                           </div>
                         ) : (
-                          <div className="text-gray-400 text-sm italic flex items-center">
-                            <span className="mr-2">🕒</span>
-                            Horário disponível
-                          </div>
+                          /* Horário Disponível - Clicável para criar agendamento */
+                          onCreateAppointment ? (
+                            <button
+                              onClick={() => {
+                                const dateStr = selectedDay!.toISOString().split('T')[0]
+                                const timeStr = `${String(hour).padStart(2, '0')}:00`
+                                onCreateAppointment(dateStr, timeStr)
+                              }}
+                              className="w-full text-left text-gray-400 hover:text-blue-600 hover:bg-blue-50 text-sm italic flex items-center p-2 rounded transition-all group"
+                            >
+                              <span className="mr-2 group-hover:scale-110 transition-transform">➕</span>
+                              <span className="group-hover:font-medium">Criar agendamento</span>
+                            </button>
+                          ) : (
+                            <div className="text-gray-400 text-sm italic flex items-center">
+                              <span className="mr-2">🕒</span>
+                              Horário disponível
+                            </div>
+                          )
                         )}
                       </div>
 

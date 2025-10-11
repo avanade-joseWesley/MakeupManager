@@ -19,6 +19,13 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   const [message, setMessage] = useState('')
   const [currentView, setCurrentView] = useState<'dashboard' | 'settings' | 'calculator' | 'clients' | 'appointments' | 'pdfs' | 'calendar'>('dashboard')
   
+  // Estados para dados do agendamento rápido (vindo do calendário)
+  const [quickAppointmentData, setQuickAppointmentData] = useState<{
+    date?: string
+    time?: string
+    status?: 'pending' | 'confirmed'
+  }>({})
+  
   // Estado para filtros de agendamento
   const [appointmentFilters, setAppointmentFilters] = useState<{
     status: 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'overdue' | null
@@ -318,7 +325,16 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <div></div>
             </div>
           </div>
-          <PriceCalculator user={user} />
+          <PriceCalculator 
+            user={user} 
+            initialDate={quickAppointmentData.date}
+            initialTime={quickAppointmentData.time}
+            initialStatus={quickAppointmentData.status}
+            onBackToCalendar={() => {
+              setQuickAppointmentData({})
+              setCurrentView('calendar')
+            }}
+          />
         </Container>
       </div>
     )
@@ -362,7 +378,18 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   }
 
   if (currentView === 'calendar') {
-    return <CalendarPage onBack={() => setCurrentView('dashboard')} user={user} />
+    return <CalendarPage 
+      onBack={() => setCurrentView('dashboard')} 
+      user={user} 
+      onCreateAppointment={(date, time) => {
+        setQuickAppointmentData({
+          date,
+          time,
+          status: 'confirmed'
+        })
+        setCurrentView('calculator')
+      }}
+    />
   }
 
   return (

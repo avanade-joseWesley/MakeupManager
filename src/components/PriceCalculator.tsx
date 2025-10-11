@@ -4,6 +4,10 @@ import NumericInput from './NumericInput'
 
 interface PriceCalculatorProps {
   user: any
+  initialDate?: string // Data inicial (YYYY-MM-DD)
+  initialTime?: string // Hora inicial (HH:MM)
+  initialStatus?: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+  onBackToCalendar?: () => void // Callback para voltar ao calendário
 }
 
 interface Service {
@@ -27,7 +31,7 @@ interface RegionalPrice {
   price: number
 }
 
-export function PriceCalculator({ user }: PriceCalculatorProps) {
+export function PriceCalculator({ user, initialDate, initialTime, initialStatus, onBackToCalendar }: PriceCalculatorProps) {
   const [services, setServices] = useState<Service[]>([])
   const [areas, setAreas] = useState<ServiceArea[]>([])
   const [regionalPrices, setRegionalPrices] = useState<RegionalPrice[]>([])
@@ -49,11 +53,11 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
   // Estados do modal de agendamento
   const [showAppointmentModal, setShowAppointmentModal] = useState(false)
   const [appointmentAddress, setAppointmentAddress] = useState('')
-  const [appointmentDate, setAppointmentDate] = useState('')
-  const [appointmentTime, setAppointmentTime] = useState('')
+  const [appointmentDate, setAppointmentDate] = useState(initialDate || '')
+  const [appointmentTime, setAppointmentTime] = useState(initialTime || '')
   const [appointmentHour, setAppointmentHour] = useState('')
   const [appointmentMinute, setAppointmentMinute] = useState('')
-  const [isAppointmentConfirmed, setIsAppointmentConfirmed] = useState(false)
+  const [isAppointmentConfirmed, setIsAppointmentConfirmed] = useState(initialStatus === 'confirmed')
 
   // Estados de pagamento
   const [downPaymentAmount, setDownPaymentAmount] = useState('0')
@@ -835,9 +839,37 @@ export function PriceCalculator({ user }: PriceCalculatorProps) {
 
   return (
     <div className="bg-white p-2 sm:p-3 rounded-2xl shadow-xl">
-      <h2 className="text-lg font-semibold text-gray-800 mb-2">
-        🧮 Calculadora de Preços
-      </h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-lg font-semibold text-gray-800">
+          🧮 Calculadora de Preços
+        </h2>
+        {onBackToCalendar && (
+          <button
+            onClick={onBackToCalendar}
+            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1"
+          >
+            <span>←</span>
+            <span>Voltar ao Calendário</span>
+          </button>
+        )}
+      </div>
+      
+      {/* Indicador de agendamento pré-configurado */}
+      {(initialDate || initialTime) && (
+        <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+          <div className="flex items-center space-x-2">
+            <span className="text-xl">📅</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-blue-800">Agendamento Rápido</p>
+              <p className="text-xs text-blue-600">
+                {initialDate && `Data: ${new Date(initialDate + 'T00:00:00').toLocaleDateString('pt-BR')}`}
+                {initialDate && initialTime && ' • '}
+                {initialTime && `Horário: ${initialTime}`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Opção de Valor Manual */}
       <div className="mb-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">

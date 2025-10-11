@@ -253,6 +253,13 @@ export const formatDate = (dateString: string | Date | null | undefined, options
       return dateString
     }
     
+    // Se for string no formato YYYY-MM-DD (do banco de dados), usar parseamento local
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateString)) {
+      const [year, month, day] = dateString.split('T')[0].split('-')
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+      return date.toLocaleDateString('pt-BR', options)
+    }
+    
     // Converte para Date e formata
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString
     if (isNaN(date.getTime())) {

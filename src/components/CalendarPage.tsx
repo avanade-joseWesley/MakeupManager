@@ -629,7 +629,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                           </div>
                           {appointment.appointment_address && (
                             <div className="flex items-center text-gray-700">
-                              <span className="mr-2">�</span>
+                              <span className="mr-2">📍</span>
                               <button
                                 onClick={() => {
                                   const encodedAddress = encodeURIComponent(appointment.appointment_address!)
@@ -643,7 +643,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                             </div>
                           )}
                           <div className="flex items-center text-gray-700">
-                            <span className="mr-2">�🕐</span>
+                            <span className="mr-2">🕐</span>
                             <span className="font-medium">{appointment.scheduled_time || 'Horário não definido'}</span>
                           </div>
                           <div className="flex items-center text-gray-700">

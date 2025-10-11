@@ -12,6 +12,7 @@ interface CalendarAppointment {
   scheduled_date: string
   scheduled_time: string | null
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
+  appointment_address: string | null
   clients: any
   appointment_services: any[]
   total_duration_minutes: number | null
@@ -54,6 +55,7 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           scheduled_date,
           scheduled_time,
           status,
+          appointment_address,
           total_duration_minutes,
           payment_total_service,
           payment_total_appointment,
@@ -178,8 +180,13 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
     return appointments.filter(apt => {
       if (apt.scheduled_date !== dateStr || !apt.scheduled_time) return false
       
-      const [hours] = apt.scheduled_time.split(':').map(Number)
-      return hours === hour
+      const [hours, minutes] = apt.scheduled_time.split(':').map(Number)
+      const startHour = hours
+      const durationMinutes = apt.total_duration_minutes || 60 // Duração padrão: 1 hora
+      const endHour = startHour + Math.ceil(durationMinutes / 60)
+      
+      // O agendamento aparece se a hora está no intervalo de duração
+      return hour >= startHour && hour < endHour
     })
   }
 
@@ -433,61 +440,100 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                       <div className="flex-1 ml-4">
                         {hourAppointments.length > 0 ? (
                           <div className="space-y-2">
-                            {hourAppointments.map(appointment => (
-                              <div
-                                key={appointment.id}
-                                className={`
-                                  p-3 rounded-lg border-2 shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer
-                                  ${appointment.status === 'confirmed'
-                                    ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300 text-green-800'
-                                    : appointment.status === 'pending'
-                                    ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-yellow-300 text-yellow-800'
-                                    : appointment.status === 'completed'
-                                    ? 'bg-gradient-to-r from-blue-100 to-indigo-100 border-blue-300 text-blue-800'
-                                    : 'bg-gradient-to-r from-red-100 to-pink-100 border-red-300 text-red-800'
-                                  }
-                                `}
-                                onClick={() => openDayDetails(selectedDay!)}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <div className="font-bold text-sm flex items-center">
-                                      <span className="mr-2">
-                                        {appointment.status === 'confirmed' ? '✅' :
-                                         appointment.status === 'pending' ? '⏳' :
-                                         appointment.status === 'completed' ? '🎉' : '❌'}
-                                      </span>
-                                      {appointment.clients?.name || 'Cliente'}
-                                    </div>
-                                    <div className="text-xs text-gray-600 mt-1">
-                                      📞 {appointment.clients?.phone || 'Sem telefone'}
-                                    </div>
-                                    <div className="text-xs text-gray-600 mt-1">
-                                     💄 {appointment.appointment_services && appointment.appointment_services.length > 0
-                                        ? appointment.appointment_services.length === 1
-                                          ? appointment.appointment_services[0].services?.name
-                                          : `${appointment.appointment_services.length} serviços`
-                                        : 'Serviço não informado'}
-                                      {appointment.total_duration_minutes && (
-                                        <span className="ml-2 font-medium">
-                                          ⏱️ {formatDuration(appointment.total_duration_minutes)}
-                                        </span>
+                            {hourAppointments.map(appointment => {
+                              // Verificar se é a hora inicial do atendimento
+                              const [startHour] = appointment.scheduled_time?.split(':').map(Number) || [0]
+                              const isStartHour = hour === startHour
+                              const durationMinutes = appointment.total_duration_minutes || 60
+                              const endHour = startHour + Math.ceil(durationMinutes / 60)
+                              const isLastHour = hour === endHour - 1
+                              
+                              // Cores baseadas no status
+                              const statusColors = {
+                                confirmed: { bg: 'from-green-100 to-emerald-100', border: 'border-green-400', bar: 'bg-green-500', text: 'text-green-800' },
+                                pending: { bg: 'from-yellow-100 to-orange-100', border: 'border-yellow-400', bar: 'bg-yellow-500', text: 'text-yellow-800' },
+                                completed: { bg: 'from-blue-100 to-indigo-100', border: 'border-blue-400', bar: 'bg-blue-500', text: 'text-blue-800' },
+                                cancelled: { bg: 'from-red-100 to-pink-100', border: 'border-red-400', bar: 'bg-red-500', text: 'text-red-800' }
+                              }
+                              const colors = statusColors[appointment.status] || statusColors.pending
+
+                              return (
+                                <div
+                                  key={appointment.id}
+                                  className={`
+                                    relative p-3 rounded-lg border-l-4 border-2 shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer
+                                    bg-gradient-to-r ${colors.bg} ${colors.border} ${colors.text}
+                                  `}
+                                  onClick={() => openDayDetails(selectedDay!)}
+                                >
+                                  {/* Barra lateral grossa indicando continuação */}
+                                  <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${colors.bar}`}></div>
+                                  
+                                  {/* Indicador visual de continuação do atendimento */}
+                                  {!isStartHour && (
+                                    <div className={`absolute -top-3 left-0 right-0 h-3 ${colors.bar} opacity-30`}></div>
+                                  )}
+                                  {!isLastHour && (
+                                    <div className={`absolute -bottom-3 left-0 right-0 h-3 ${colors.bar} opacity-30`}></div>
+                                  )}
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                      {/* Mostrar informações completas apenas na primeira hora */}
+                                      {isStartHour ? (
+                                        <>
+                                          <div className="font-bold text-sm flex items-center">
+                                            <span className="mr-2">
+                                              {appointment.status === 'confirmed' ? '✅' :
+                                               appointment.status === 'pending' ? '⏳' :
+                                               appointment.status === 'completed' ? '🎉' : '❌'}
+                                            </span>
+                                            {appointment.clients?.name || 'Cliente'}
+                                          </div>
+                                          <div className="text-xs text-gray-600 mt-1">
+                                            📞 {appointment.clients?.phone || 'Sem telefone'}
+                                          </div>
+                                          <div className="text-xs text-gray-600 mt-1">
+                                           💄 {appointment.appointment_services && appointment.appointment_services.length > 0
+                                              ? appointment.appointment_services.length === 1
+                                                ? appointment.appointment_services[0].services?.name
+                                                : `${appointment.appointment_services.length} serviços`
+                                              : 'Serviço não informado'}
+                                            {appointment.total_duration_minutes && (
+                                              <span className="ml-2 font-medium">
+                                                ⏱️ {formatDuration(appointment.total_duration_minutes)}
+                                              </span>
+                                            )}
+                                          </div>
+                                          {appointment.payment_total_appointment && (
+                                            <div className="text-xs mt-1 font-medium">
+                                              💰 R$ {appointment.payment_total_appointment.toFixed(2)}
+                                            </div>
+                                          )}
+                                        </>
+                                      ) : (
+                                        /* Nas horas seguintes, mostrar indicador de continuação */
+                                        <div className="flex items-center space-x-2">
+                                          <div className="text-sm font-semibold opacity-75">
+                                            ↓ {appointment.clients?.name || 'Atendimento'}
+                                          </div>
+                                          <div className="text-xs opacity-60">
+                                            (em andamento)
+                                          </div>
+                                        </div>
                                       )}
                                     </div>
-                                    {appointment.payment_total_appointment && (
-                                      <div className="text-xs mt-1 font-medium">
-                                        💰 R$ {appointment.payment_total_appointment.toFixed(2)}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="text-right ml-4">
-                                    <div className="text-xs text-gray-500">
-                                      {appointment.scheduled_time}
+                                    <div className="text-right ml-4">
+                                      {isStartHour && (
+                                        <div className="text-xs text-gray-500">
+                                          {appointment.scheduled_time}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         ) : (
                           <div className="text-gray-400 text-sm italic flex items-center">
@@ -577,14 +623,44 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                             <span className="mr-2">📞</span>
                             <span className="font-medium">{appointment.clients?.phone || 'Telefone não informado'}</span>
                           </div>
+                          {appointment.appointment_address && (
+                            <div className="flex items-center text-gray-700">
+                              <span className="mr-2">�</span>
+                              <button
+                                onClick={() => {
+                                  const encodedAddress = encodeURIComponent(appointment.appointment_address!)
+                                  window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank')
+                                }}
+                                className="text-blue-600 hover:text-blue-800 underline font-medium text-left"
+                                title="Abrir no Google Maps"
+                              >
+                                {appointment.appointment_address}
+                              </button>
+                            </div>
+                          )}
                           <div className="flex items-center text-gray-700">
-                            <span className="mr-2">🕐</span>
+                            <span className="mr-2">�🕐</span>
                             <span className="font-medium">{appointment.scheduled_time || 'Horário não definido'}</span>
                           </div>
                           <div className="flex items-center text-gray-700">
                             <span className="mr-2">⏱️</span>
                             <span>{appointment.total_duration_minutes ? formatDuration(appointment.total_duration_minutes) : 'Duração não definida'}</span>
                           </div>
+                          {/* Botão WhatsApp */}
+                          {appointment.clients?.phone && (
+                            <button
+                              onClick={() => {
+                                const cleanNumber = appointment.clients.phone.replace(/\D/g, '')
+                                const whatsappNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`
+                                window.open(`https://wa.me/${whatsappNumber}`, '_blank')
+                              }}
+                              className="mt-2 w-full flex items-center justify-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                              title="Abrir WhatsApp"
+                            >
+                              <span>📱</span>
+                              <span>WhatsApp</span>
+                            </button>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <div className="text-gray-700">

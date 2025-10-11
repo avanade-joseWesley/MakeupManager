@@ -173,8 +173,8 @@ export default function FinancialDashboard({ user, onBack }: FinancialDashboardP
         // Valores personalizados
         if (apt.is_custom_price) customPriceCount++
 
-        // Apenas considerar agendamentos não cancelados
-        if (apt.status !== 'cancelled') {
+        // Apenas considerar agendamentos confirmados ou concluídos (não cancelados e não pendentes)
+        if (apt.status !== 'cancelled' && apt.status !== 'pending') {
           // Total geral
           totalReceived += paidValue
           if (pendingValue > 0) {
@@ -199,8 +199,8 @@ export default function FinancialDashboard({ user, onBack }: FinancialDashboardP
             if (pendingValue > 0) todayReceivable += pendingValue
           }
 
-          // Atrasados
-          if (isOverdue && pendingValue > 0) {
+          // Atrasados (apenas confirmados que estão atrasados)
+          if (isOverdue && pendingValue > 0 && apt.status === 'confirmed') {
             overdueAmount += pendingValue
             overdueList.push({
               id: apt.id,
@@ -218,8 +218,8 @@ export default function FinancialDashboard({ user, onBack }: FinancialDashboardP
             })
           }
 
-          // Pendentes (futuros ou atuais)
-          if (!isOverdue && pendingValue > 0) {
+          // Pendentes (futuros ou atuais - apenas confirmados)
+          if (!isOverdue && pendingValue > 0 && apt.status === 'confirmed') {
             pendingList.push({
               id: apt.id,
               scheduled_date: apt.scheduled_date,

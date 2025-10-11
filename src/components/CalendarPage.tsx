@@ -23,6 +23,8 @@ interface CalendarAppointment {
   payment_down_payment_expected: number | null
   total_amount_paid: number | null
   is_custom_price: boolean | null
+  payment_status: 'pending' | 'paid' | null
+  notes: string | null
 }
 
 export default function CalendarPage({ user, onBack }: CalendarPageProps) {
@@ -33,6 +35,17 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
   const [selectedDateAppointments, setSelectedDateAppointments] = useState<CalendarAppointment[]>([])
   const [viewMode, setViewMode] = useState<'month' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState<Date | null>(new Date())
+  const [editingAppointment, setEditingAppointment] = useState<CalendarAppointment | null>(null)
+  const [editForm, setEditForm] = useState({
+    status: 'pending' as 'pending' | 'confirmed' | 'completed' | 'cancelled',
+    scheduled_date: '',
+    scheduled_time: '',
+    notes: '',
+    payment_status: 'pending' as 'pending' | 'paid',
+    total_received: 0,
+    payment_total_service: 0,
+    travel_fee: 0
+  })
 
   // Carregar agendamentos do mês atual
   useEffect(() => {
@@ -66,6 +79,8 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
           payment_down_payment_expected,
           total_amount_paid,
           is_custom_price,
+          payment_status,
+          notes,
           clients!inner (
             name,
             phone
@@ -108,6 +123,78 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
   // Ir para mês atual
   const goToToday = () => {
     setCurrentDate(new Date())
+  }
+
+  // Funções de edição de agendamento
+  const startEditing = (appointment: CalendarAppointment) => {
+    setEditingAppointment(appointment)
+    setEditForm({
+      status: appointment.status,
+      scheduled_date: appointment.scheduled_date || '',
+      scheduled_time: appointment.scheduled_time || '',
+      notes: appointment.notes || '',
+      payment_status: appointment.payment_status || 'pending',
+      total_received: appointment.total_amount_paid || 0,
+      payment_total_service: appointment.payment_total_service || 0,
+      travel_fee: appointment.travel_fee || 0
+    })
+  }
+
+  const cancelEditing = () => {
+    setEditingAppointment(null)
+    setEditForm({
+      status: 'pending',
+      scheduled_date: '',
+      scheduled_time: '',
+      notes: '',
+      payment_status: 'pending',
+      total_received: 0,
+      payment_total_service: 0,
+      travel_fee: 0
+    })
+  }
+
+  const saveAppointment = async () => {
+    if (!editingAppointment || !user?.id) return
+
+    try {
+      // Detectar se houve edição nos valores financeiros
+      const isStatusChangedToCompleted = editForm.status === 'completed' && editingAppointment.status !== 'completed'
+      const updatedTotalReceived = isStatusChangedToCompleted ? editingAppointment.payment_total_service : editForm.total_received
+
+      // Verificar se valores financeiros foram editados
+      const wasServiceValueEdited = editForm.payment_total_service !== editingAppointment.payment_total_service
+      const wasTravelFeeEdited = editForm.travel_fee !== editingAppointment.travel_fee
+      const wasFinancialDataEdited = wasServiceValueEdited || wasTravelFeeEdited
+
+      // Calcular novo total
+      const newTotalAppointment = editForm.payment_total_service + editForm.travel_fee
+
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          status: editForm.status,
+          scheduled_date: editForm.scheduled_date || null,
+          scheduled_time: editForm.scheduled_time || null,
+          notes: editForm.notes || null,
+          payment_status: editForm.payment_status,
+          total_amount_paid: updatedTotalReceived,
+          payment_total_service: editForm.payment_total_service,
+          travel_fee: editForm.travel_fee,
+          payment_total_appointment: newTotalAppointment,
+          is_custom_price: wasFinancialDataEdited ? true : editingAppointment.is_custom_price || false,
+        })
+        .eq('id', editingAppointment.id)
+
+      if (error) throw error
+
+      alert('✅ Agendamento atualizado com sucesso!')
+      cancelEditing()
+      loadMonthAppointments() // Recarregar appointments
+    } catch (error: any) {
+      console.error('Erro ao atualizar agendamento:', error)
+      alert(`❌ Erro ao atualizar agendamento: ${error.message}`)
+    }
   }
 
   // Navegação entre dias (para visualização diária)
@@ -650,21 +737,35 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
                             <span className="mr-2">⏱️</span>
                             <span>{appointment.total_duration_minutes ? formatDuration(appointment.total_duration_minutes) : 'Duração não definida'}</span>
                           </div>
-                          {/* Botão WhatsApp */}
-                          {appointment.clients?.phone && (
+                          
+                          {/* Botões de Ação */}
+                          <div className="flex gap-2 mt-2">
+                            {/* Botão Editar */}
                             <button
-                              onClick={() => {
-                                const cleanNumber = appointment.clients.phone.replace(/\D/g, '')
-                                const whatsappNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`
-                                window.open(`https://wa.me/${whatsappNumber}`, '_blank')
-                              }}
-                              className="mt-2 w-full flex items-center justify-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
-                              title="Abrir WhatsApp"
+                              onClick={() => startEditing(appointment)}
+                              className="flex-1 flex items-center justify-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                              title="Editar Agendamento"
                             >
-                              <span>📱</span>
-                              <span>WhatsApp</span>
+                              <span>✏️</span>
+                              <span>Editar</span>
                             </button>
-                          )}
+                            
+                            {/* Botão WhatsApp */}
+                            {appointment.clients?.phone && (
+                              <button
+                                onClick={() => {
+                                  const cleanNumber = appointment.clients.phone.replace(/\D/g, '')
+                                  const whatsappNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`
+                                  window.open(`https://wa.me/${whatsappNumber}`, '_blank')
+                                }}
+                                className="flex-1 flex items-center justify-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+                                title="Abrir WhatsApp"
+                              >
+                                <span>📱</span>
+                                <span>WhatsApp</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <div className="text-gray-700">
@@ -829,6 +930,242 @@ export default function CalendarPage({ user, onBack }: CalendarPageProps) {
               </div>
               <div className="text-xs sm:text-sm text-gray-500">
                 ✨ Preparando seus agendamentos
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edição */}
+      {editingAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[95vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white p-6 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <span className="text-xl">✏️</span>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">
+                      Editar Agendamento
+                    </h2>
+                    <p className="text-blue-100 text-sm">
+                      {editingAppointment.clients?.name}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={cancelEditing}
+                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                >
+                  <span className="text-white text-lg">×</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+              {/* Status do Agendamento */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="mr-2">📅</span>
+                  Status do Agendamento
+                </label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => {
+                    const newStatus = e.target.value as any
+                    // Se o status for alterado para "completed", automaticamente marcar como pago
+                    if (newStatus === 'completed') {
+                      setEditForm({
+                        ...editForm,
+                        status: newStatus,
+                        payment_status: 'paid',
+                        total_received: editingAppointment.payment_total_service || 0
+                      })
+                    } else {
+                      setEditForm({...editForm, status: newStatus})
+                    }
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white text-gray-900"
+                >
+                  <option value="pending">⏳ Aguardando Confirmação</option>
+                  <option value="confirmed">✅ Agendamento Confirmado</option>
+                  <option value="completed">🎉 Serviço Realizado</option>
+                  <option value="cancelled">❌ Agendamento Cancelado</option>
+                </select>
+              </div>
+
+              {/* Data e Horário */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-2xl border border-green-100">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <span className="mr-2">📅</span>
+                    Data
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.scheduled_date}
+                    onChange={(e) => setEditForm({...editForm, scheduled_date: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white text-gray-900"
+                  />
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-2xl border border-purple-100">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <span className="mr-2">⏰</span>
+                    Horário
+                  </label>
+                  <input
+                    type="time"
+                    value={editForm.scheduled_time}
+                    onChange={(e) => setEditForm({...editForm, scheduled_time: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-gray-900"
+                  />
+                </div>
+              </div>
+
+              {/* Status do Pagamento */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-2xl border border-yellow-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="mr-2">💰</span>
+                  Situação do Pagamento
+                </label>
+                <select
+                  value={editForm.payment_status}
+                  onChange={(e) => setEditForm({...editForm, payment_status: e.target.value as any})}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 transition-all duration-200 bg-white text-gray-900"
+                >
+                  <option value="pending">⏳ Pagamento Pendente</option>
+                  <option value="paid">✅ Pagamento Completo</option>
+                </select>
+              </div>
+
+              {/* Valores Financeiros - Valor do Serviço, Taxa de Deslocamento e Entrada */}
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-2xl border-2 border-indigo-200">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-semibold text-gray-700 flex items-center">
+                    <span className="mr-2">💰</span>
+                    Valores Financeiros
+                  </label>
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium">
+                    {editingAppointment.is_custom_price ? '💎 Valor Personalizado' : '📋 Valor Calculado'}
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Valor do Serviço */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">
+                      💄 Valor do Serviço (R$)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        step="10"
+                        value={editForm.payment_total_service}
+                        onChange={(e) => setEditForm({...editForm, payment_total_service: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white text-gray-900 font-medium"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Taxa de Deslocamento */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">
+                      🚗 Taxa de Deslocamento (R$)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        step="10"
+                        value={editForm.travel_fee}
+                        onChange={(e) => setEditForm({...editForm, travel_fee: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white text-gray-900 font-medium"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Total Calculado */}
+                  <div className="pt-3 border-t border-indigo-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-gray-700">💰 Total do Atendimento:</span>
+                      <span className="text-lg font-bold text-indigo-600">
+                        R$ {(editForm.payment_total_service + editForm.travel_fee).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Entrada (Valor Já Recebido) */}
+                  <div className="pt-3 border-t border-indigo-200">
+                    <label className="block text-xs font-medium text-gray-600 mb-2">
+                      💵 Entrada (Valor Já Recebido)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">R$</span>
+                      <input
+                        type="number"
+                        step="10"
+                        value={editForm.total_received}
+                        onChange={(e) => setEditForm({...editForm, total_received: parseFloat(e.target.value) || 0})}
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white text-gray-900 font-medium"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    {/* Valor Pendente */}
+                    <div className="mt-3 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 p-3 rounded-lg border border-amber-200">
+                      <span className="text-sm font-semibold text-gray-700">💳 Valor Pendente:</span>
+                      <span className="text-lg font-bold text-orange-600">
+                        R$ {((editForm.payment_total_service + editForm.travel_fee) - editForm.total_received).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <p className="text-xs text-yellow-800">
+                    ⚠️ <strong>Atenção:</strong> Ao editar esses valores, o agendamento será marcado como "Valor Personalizado".
+                  </p>
+                </div>
+              </div>
+
+              {/* Observações */}
+              <div className="bg-gradient-to-r from-pink-50 to-rose-50 p-4 rounded-2xl border border-pink-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="mr-2">📝</span>
+                  Observações
+                </label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
+                  rows={4}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all duration-200 bg-white text-gray-900 resize-none"
+                  placeholder="Adicione observações sobre o agendamento..."
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 rounded-b-3xl border-t border-gray-200">
+              <div className="flex space-x-3">
+                <button
+                  onClick={cancelEditing}
+                  className="flex-1 py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+                >
+                  ❌ Cancelar
+                </button>
+                <button
+                  onClick={saveAppointment}
+                  className="flex-1 py-3 px-6 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  💾 Salvar Alterações
+                </button>
               </div>
             </div>
           </div>

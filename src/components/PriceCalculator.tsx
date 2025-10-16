@@ -748,11 +748,11 @@ export function PriceCalculator({ user, initialDate, initialTime, initialStatus,
         parseFloat(manualPrice.replace(',', '.')) : 
         calculatedPrices.services.reduce((sum, service) => sum + service.totalPrice, 0)
       
-      // Calcular taxa de deslocamento
+      // Calcular taxa de deslocamento (sempre 0 para valores personalizados)
       const area = areas.find(a => a.id === selectedArea)
-      const travelFee = includeTravelFee && area ? area.travel_fee : 0
+      const travelFee = useManualPrice ? 0 : (includeTravelFee && area ? area.travel_fee : 0)
       
-      // Valor total do atendimento (serviços + taxa)
+      // Valor total do atendimento (serviços + taxa, mas taxa = 0 para personalizados)
       const totalAppointmentValue = servicesOnlyValue + travelFee
       
       const downPaymentPaid = parseFloat(downPaymentAmount || '0')
@@ -809,8 +809,8 @@ export function PriceCalculator({ user, initialDate, initialTime, initialStatus,
 
       if (appointmentError) throw appointmentError
 
-      // 5. Inserir os serviços do agendamento (apenas se não for valor manual)
-      if (!useManualPrice && calculatedPrices.services.length > 0) {
+      // 5. Inserir os serviços do agendamento (sempre, independente do tipo de preço)
+      if (calculatedPrices.services.length > 0) {
         const appointmentServicesData = calculatedPrices.services.map(service => ({
           appointment_id: appointment.id,
           service_id: service.serviceId,
@@ -1219,7 +1219,7 @@ export function PriceCalculator({ user, initialDate, initialTime, initialStatus,
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <span className="font-semibold text-gray-800 text-lg">
-                            {service.quantity}x {serviceInfo?.name}
+                            {serviceInfo?.name} ({service.quantity}x)
                           </span>
                           {isRegionalPrice && (
                             <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
@@ -1557,7 +1557,7 @@ export function PriceCalculator({ user, initialDate, initialTime, initialStatus,
                           <div className="flex justify-between items-center">
                             <div className="flex-1 min-w-0">
                               <span className="font-semibold text-gray-900 text-xs sm:text-sm">
-                                {service.quantity}x {serviceInfo?.name}
+                                {serviceInfo?.name} ({service.quantity}x)
                               </span>
                               {isRegionalPrice && (
                                 <span className="ml-1 sm:ml-2 px-1 sm:px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">

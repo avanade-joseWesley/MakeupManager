@@ -265,7 +265,11 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
       const wasFinancialDataEdited = wasServiceValueEdited || wasTravelFeeEdited
 
       // Calcular novo valor total do atendimento
-      const newTotalAppointment = editForm.payment_total_service + editForm.travel_fee
+      // Para valores personalizados, o total é apenas o valor do serviço (sem taxa)
+      const isCustomPrice = wasFinancialDataEdited ? true : editingAppointment.is_custom_price || false
+      const newTotalAppointment = isCustomPrice ? 
+        editForm.payment_total_service : 
+        (editForm.payment_total_service + editForm.travel_fee)
 
       const { error } = await supabase
         .from('appointments')
@@ -312,7 +316,11 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
       const message = `*🎨 AGENDAMENTO ATUALIZADO*
 
 👤 *Cliente:* ${appointment.client.name}
-💄 *Serviço:* ${appointment.appointment_services?.map(s => `${s.quantity}x ${s.service?.name}`).join(', ') || 'Serviços'}
+💄 *Serviço:* ${appointment.appointment_services?.length > 0
+  ? appointment.appointment_services.map(s => `${s.service?.name} (${s.quantity}x)`).join(', ')
+  : appointment.is_custom_price
+    ? 'Valor Personalizado'
+    : 'Serviços'}
 📅 *Data:* ${appointment.scheduled_date ? formatDate(appointment.scheduled_date) : 'Não definida'}
 ⏰ *Horário:* ${appointment.scheduled_time || 'Não definido'}
 📍 *Local:* ${appointment.appointment_address || 'A combinar'}
@@ -658,32 +666,44 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                               </div>
                             )}
 
-                            {/* Valor dos Serviços */}
-                            {appointment.payment_total_service && 
-                             appointment.payment_total_service !== appointment.payment_total_appointment && (
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 flex items-center">
-                                  <span className="mr-2">💄</span>
-                                  Serviços:
-                                </span>
-                                <span className="text-gray-700 font-medium">
-                                  R$ {appointment.payment_total_service.toFixed(2)}
-                                </span>
+                            {/* Para agendamentos personalizados, mostrar apenas o valor total */}
+                            {appointment.is_custom_price ? (
+                              <div className="text-center py-2">
+                                <div className="text-sm text-gray-600 mb-1">Valor Total do Atendimento:</div>
+                                <div className="text-xl font-bold text-purple-600">
+                                  R$ {appointment.payment_total_appointment.toFixed(2)}
+                                </div>
                               </div>
-                            )}
+                            ) : (
+                              <>
+                                {/* Valor dos Serviços (apenas para agendamentos calculados) */}
+                                {appointment.payment_total_service && 
+                                 appointment.payment_total_service !== appointment.payment_total_appointment && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 flex items-center">
+                                      <span className="mr-2">💄</span>
+                                      Serviços:
+                                    </span>
+                                    <span className="text-gray-700 font-medium">
+                                      R$ {appointment.payment_total_service.toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
 
-                            {/* Taxa de Deslocamento */}
-                            {appointment.travel_fee !== undefined && 
-                             appointment.travel_fee > 0 && (
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600 flex items-center">
-                                  <span className="mr-2">🚗</span>
-                                  Taxa de Deslocamento:
-                                </span>
-                                <span className="text-orange-600 font-medium">
-                                  R$ {appointment.travel_fee.toFixed(2)}
-                                </span>
-                              </div>
+                                {/* Taxa de Deslocamento (apenas para agendamentos calculados) */}
+                                {appointment.travel_fee !== undefined && 
+                                 appointment.travel_fee > 0 && (
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="text-gray-600 flex items-center">
+                                      <span className="mr-2">🚗</span>
+                                      Taxa de Deslocamento:
+                                    </span>
+                                    <span className="text-orange-600 font-medium">
+                                      R$ {appointment.travel_fee.toFixed(2)}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
                             )}
 
                             {/* Entrada Paga */}
@@ -742,18 +762,26 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                           <span>Serviços:</span>
                         </div>
                         <div className="space-y-2">
-                          {appointment.appointment_services?.map((service, index) => (
-                            <div key={index} className="bg-white px-3 py-2 rounded border border-gray-200">
-                              <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-900">
-                                  {service.quantity}x {service.service?.name}
-                                </span>
-                                <span className="text-sm font-semibold text-green-600">
-                                  R$ {service.total_price.toFixed(2)}
-                                </span>
+                          {appointment.appointment_services?.length > 0 ? (
+                            appointment.appointment_services.map((service, index) => (
+                              <div key={index} className="bg-white px-3 py-2 rounded border border-gray-200">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-900">
+                                    {service.service?.name} ({service.quantity}x)
+                                  </span>
+                                  <span className="text-sm font-semibold text-green-600">
+                                    R$ {service.total_price.toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          ) : appointment.is_custom_price ? (
+                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 px-3 py-2 rounded border border-purple-200">
+                              <div className="text-sm text-purple-800 font-medium">
+                                💎 Valor Personalizado
                               </div>
                             </div>
-                          )) || (
+                          ) : (
                             <div className="text-sm text-gray-500 italic bg-white px-3 py-2 rounded border border-gray-200">
                               Nenhum serviço informado
                             </div>

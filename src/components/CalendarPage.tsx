@@ -87,6 +87,7 @@ export default function CalendarPage({ user, onBack, onCreateAppointment }: Cale
             phone
           ),
           appointment_services (
+            quantity,
             services (
               name
             )
@@ -170,7 +171,11 @@ export default function CalendarPage({ user, onBack, onCreateAppointment }: Cale
       const wasFinancialDataEdited = wasServiceValueEdited || wasTravelFeeEdited
 
       // Calcular novo total
-      const newTotalAppointment = editForm.payment_total_service + editForm.travel_fee
+      // Para valores personalizados, o total é apenas o valor do serviço (sem taxa)
+      const isCustomPrice = wasFinancialDataEdited ? true : editingAppointment.is_custom_price || false
+      const newTotalAppointment = isCustomPrice ? 
+        editForm.payment_total_service : 
+        (editForm.payment_total_service + editForm.travel_fee)
 
       const { error } = await supabase
         .from('appointments')
@@ -591,7 +596,9 @@ export default function CalendarPage({ user, onBack, onCreateAppointment }: Cale
                                               ? appointment.appointment_services.length === 1
                                                 ? appointment.appointment_services[0].services?.name
                                                 : `${appointment.appointment_services.length} serviços`
-                                              : 'Serviço não informado'}
+                                              : appointment.is_custom_price
+                                                ? 'Valor Personalizado'
+                                                : 'Serviço não informado'}
                                             {appointment.total_duration_minutes && (
                                               <span className="ml-2 font-medium">
                                                 ⏱️ {formatDuration(appointment.total_duration_minutes)}
@@ -794,8 +801,7 @@ export default function CalendarPage({ user, onBack, onCreateAppointment }: Cale
                                     appointment.appointment_services.map((service, index) => (
                                       <div key={index} className="text-sm text-gray-600 flex items-start">
                                         <span className="mr-1 flex-shrink-0">•</span>
-                                        <span>{service.services?.name || 'Serviço'}
-                                        {service.quantity > 1 && ` (${service.quantity}x)`}</span>
+                                        <span>{service.services?.name || 'Serviço'} ({service.quantity}x)</span>
                                       </div>
                                     ))
                                   ) : (
@@ -831,9 +837,10 @@ export default function CalendarPage({ user, onBack, onCreateAppointment }: Cale
                                   </span>
                                 </div>
 
-                                {/* Valor dos Serviços (se diferente do total) */}
+                                {/* Valor dos Serviços (se diferente do total e não for personalizado) */}
                                 {appointment.payment_total_service && 
-                                 appointment.payment_total_service !== appointment.payment_total_appointment && (
+                                 appointment.payment_total_service !== appointment.payment_total_appointment &&
+                                 !appointment.is_custom_price && (
                                   <div className="flex items-center justify-between text-sm pt-2 border-t border-green-200">
                                     <span className="text-gray-600 flex items-center">
                                       <span className="mr-2">💄</span>
@@ -845,10 +852,11 @@ export default function CalendarPage({ user, onBack, onCreateAppointment }: Cale
                                   </div>
                                 )}
 
-                                {/* Taxa de Deslocamento */}
+                                {/* Taxa de Deslocamento (apenas para agendamentos calculados) */}
                                 {appointment.travel_fee !== null && 
                                  appointment.travel_fee !== undefined && 
-                                 appointment.travel_fee > 0 && (
+                                 appointment.travel_fee > 0 &&
+                                 !appointment.is_custom_price && (
                                   <div className="flex items-center justify-between text-sm">
                                     <span className="text-gray-600 flex items-center">
                                       <span className="mr-2">🚗</span>

@@ -275,7 +275,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     
     const firstService = appointment.appointment_services[0]
     if (appointment.appointment_services.length === 1) {
-      return `${firstService.quantity}x ${firstService.services?.name || 'Serviço'}`
+      return `${firstService.services?.name || 'Serviço'} (${firstService.quantity}x)`
     }
     
     return `${appointment.appointment_services.length} serviços`

@@ -86,6 +86,22 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
     return appointmentDate < today && (appointment.status === 'confirmed' || appointment.status === 'pending')
   }
 
+  // Função helper para verificar se agendamento está próximo (menos de 7 dias)
+  const isAppointmentUpcoming = (appointment: any) => {
+    if (!appointment.scheduled_date) return false
+    
+    const appointmentDate = new Date(appointment.scheduled_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Zera horas para comparar apenas datas
+    
+    // Calcula diferença em dias
+    const diffTime = appointmentDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    // Está próximo se for hoje ou nos próximos 7 dias (incluindo hoje)
+    return diffDays >= 0 && diffDays <= 7 && (appointment.status === 'confirmed' || appointment.status === 'pending')
+  }
+
   const loadAppointments = async () => {
     if (!user || !user.id) return
 
@@ -513,7 +529,12 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
               const isExpanded = expandedCards.has(appointment.id)
 
               // Define cores baseadas no status
-              const getCardStyle = (status: string, paymentStatus: string) => {
+              const getCardStyle = (status: string, paymentStatus: string, appointment: any) => {
+                // Primeiro verifica se está próximo (menos de 7 dias) - prioridade máxima
+                if (isAppointmentUpcoming(appointment)) {
+                  return 'bg-gradient-to-r from-purple-100 to-pink-100 border-l-4 border-purple-500 shadow-lg' // Roxo/rosa para próximos
+                }
+                
                 if (status === 'completed') {
                   return 'bg-blue-50 border-l-4 border-blue-500' // Azul para realizado
                 } else if (status === 'cancelled') {
@@ -528,7 +549,7 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
               }
 
               return (
-                <div key={appointment.id} className={`${getCardStyle(appointment.status, appointment.payment_status)} rounded-xl shadow-lg overflow-hidden`}>
+                <div key={appointment.id} className={`${getCardStyle(appointment.status, appointment.payment_status, appointment)} rounded-xl shadow-lg overflow-hidden`}>
                   {/* Card Principal - Sempre Visível */}
                   <div className="p-3 sm:p-4">
                     <div className="flex items-start justify-between mb-2">
@@ -543,6 +564,11 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                                 ⚠️
                               </span>
                             )}
+                            {isAppointmentUpcoming(appointment) && (
+                              <span className="text-purple-600 text-sm animate-pulse flex-shrink-0" title="Próximo">
+                                🔥
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -553,6 +579,11 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                               <span className="ml-2 text-blue-600 font-medium">
                                 ⏱️ {formatDuration(appointment.total_duration_minutes)}
                               </span>
+                            )}
+                            {isAppointmentUpcoming(appointment) && (
+                              <div className="text-xs text-purple-600 font-semibold mt-1 animate-pulse">
+                                🔥 AGENDAMENTO PRÓXIMO
+                              </div>
                             )}
                             {appointment.appointment_address && (
                               <div className="flex items-center space-x-1 mt-1">

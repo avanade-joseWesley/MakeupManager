@@ -210,6 +210,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           )
         `)
         .eq('user_id', user.id)
+        .eq('status', 'confirmed')
         .gte('scheduled_date', new Date().toLocaleDateString('sv-SE'))
         .order('scheduled_date', { ascending: true })
         .order('scheduled_time', { ascending: true })
@@ -350,7 +351,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       onBack={() => setCurrentView('dashboard')} 
       user={user}
       initialFilter={appointmentFilters.status || 'all'}
-      initialPaymentFilter={appointmentFilters.paymentStatus || 'all'}
+      initialPaymentFilter={(appointmentFilters.paymentStatus === 'partial' ? 'pending' : appointmentFilters.paymentStatus) || 'all'}
     />
   }
 
@@ -625,7 +626,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                     </div>
                   </div>
                   <div className="text-sm text-gray-600 mb-1">
-                    � {getMainServiceName(appointment)}
+                  💄 {getMainServiceName(appointment)}
                   </div>
                   <div className="flex justify-between items-center text-xs text-gray-500">
                     <span>🕐 {appointment.scheduled_date ? 
@@ -647,7 +648,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
           
           <div className="p-4 bg-gray-50 border-t">
             <button 
-              onClick={() => setCurrentView('appointments')}
+              onClick={() => {
+                setAppointmentFilters({ status: 'confirmed', paymentStatus: null })
+                setCurrentView('appointments')
+              }}
               className="w-full py-2 text-sm text-pink-600 font-semibold hover:text-pink-700 transition-colors"
             >
               Ver todos os agendamentos →

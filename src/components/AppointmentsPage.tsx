@@ -125,7 +125,8 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
           )
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('scheduled_date', { ascending: true })
+        .order('scheduled_time', { ascending: true })
 
       if (error) throw error
 

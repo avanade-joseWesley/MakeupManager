@@ -93,6 +93,7 @@ export default function CalendarPage({ user, onBack, onCreateAppointment }: Cale
           )
         `)
         .eq('user_id', user.id)
+        .neq('status', 'cancelled')
         .gte('scheduled_date', firstDay.toLocaleDateString('sv-SE'))
         .lte('scheduled_date', lastDay.toLocaleDateString('sv-SE'))
         .order('scheduled_date', { ascending: true })

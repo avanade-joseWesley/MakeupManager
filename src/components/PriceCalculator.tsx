@@ -800,9 +800,9 @@ export function PriceCalculator({ user, initialDate, initialTime, initialStatus,
           // Tempo total do atendimento
           total_duration_minutes: totalDurationMinutes,
 
-          notes: useManualPrice ? 
-            `Agendamento criado via calculadora - Valor diferenciado: R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` : 
-            `Agendamento criado via calculadora - ${calculatedPrices.services.length} serviço(s)`
+          notes: useManualPrice ?
+            `Valor diferenciado: R$ ${parseFloat(manualPrice.replace(',', '.')).toFixed(2)}` :
+            `${calculatedPrices.services.length} serviço(s)`
         })
         .select('id')
         .single()

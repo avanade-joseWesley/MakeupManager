@@ -318,6 +318,73 @@ export default function AppointmentsPage({ user, onBack, initialFilter = 'all', 
     }
   }
 
+  const sendReminder = async (appointment: Appointment) => {
+    if (!appointment.client?.phone) {
+      alert('Cliente não possui telefone cadastrado')
+      return
+    }
+
+    try {
+      // Formatar número do WhatsApp
+      const cleanNumber = appointment.client.phone.replace(/\D/g, '')
+      const whatsappNumber = cleanNumber.startsWith('55') ? cleanNumber : `55${cleanNumber}`
+
+      // Calcular dias até o agendamento
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const appointmentDate = new Date(appointment.scheduled_date)
+      const diffTime = appointmentDate.getTime() - today.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      // Criar mensagem de lembrete
+      const reminderMessage = `*LEMBRETE DE AGENDAMENTO*
+
+Ola ${appointment.client.name}!
+
+Seu agendamento esta chegando!
+Data: ${appointment.scheduled_date ? formatDate(appointment.scheduled_date) : 'Nao definida'}
+Horario: ${appointment.scheduled_time || 'Nao definido'}
+Local: ${appointment.appointment_address || 'A combinar'}
+
+Servicos:
+${appointment.appointment_services?.length > 0
+  ? appointment.appointment_services.map(s => `• ${s.service?.name} (${s.quantity}x)`).join('\n')
+  : 'Servicos a confirmar'}
+
+Valor Total: R$ ${appointment.payment_total_appointment.toFixed(2)}
+Valor Pago: R$ ${appointment.total_amount_paid.toFixed(2)}
+Valor Pendente: R$ ${(appointment.payment_total_appointment - appointment.total_amount_paid).toFixed(2)}
+
+${diffDays === 0 ? 'HOJE!' : diffDays === 1 ? 'AMANHA!' : `Em ${diffDays} dias!`}
+
+Por favor, confirme sua presenca ou entre em contato se precisar reagendar.
+
+Enviado via MakeUp Manager`
+
+      // Codificar mensagem para URL
+      const encodedMessage = encodeURIComponent(reminderMessage)
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`
+
+      // Abrir WhatsApp
+      window.open(whatsappUrl, '_blank')
+
+      // Atualizar status do lembrete no banco (opcional)
+      await supabase
+        .from('appointments')
+        .update({
+          reminder_sent: true,
+          reminder_sent_at: new Date().toISOString(),
+          reminder_message: reminderMessage
+        })
+        .eq('id', appointment.id)
+        .eq('user_id', user.id)
+
+    } catch (err: any) {
+      console.error('Erro ao enviar lembrete:', err)
+      alert(`Erro ao enviar lembrete: ${err.message}`)
+    }
+  }
+
   const sendWhatsApp = async (appointment: Appointment) => {
     if (!appointment.client?.phone) {
       alert('Cliente não possui telefone cadastrado')
@@ -659,6 +726,14 @@ ${appointment.notes ? `📝 *Observações:* ${appointment.notes}` : ''}
                         >
                           ✏️ Editar
                         </button>
+                        {isAppointmentUpcoming(appointment) && (
+                          <button 
+                            onClick={() => sendReminder(appointment)}
+                            className="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded text-xs font-medium transition-colors"
+                          >
+                            🔔 Lembrete
+                          </button>
+                        )}
                         <button 
                           onClick={() => sendWhatsApp(appointment)}
                           className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium transition-colors"

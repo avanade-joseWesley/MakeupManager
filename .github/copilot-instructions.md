@@ -16,25 +16,84 @@ MakeupManager is a professional makeup artist's management system built with Rea
 
 ### Data Model
 ```sql
-profiles (user profiles)
-├── service_areas (regions with travel fees)
-├── service_categories (service groups)
-│   └── services (individual services with base pricing)
-└── service_regional_prices (region-specific pricing overrides)
+-- User Management
+profiles (user profiles and business info)
+├── id (uuid, PK, FK to auth.users)
+├── email, full_name, avatar_url
+├── phone, bio, address, instagram
+├── experience_years
+└── created_at, updated_at
 
+-- Client Management
 clients (customer database with user isolation)
+├── id (uuid, PK)
+├── user_id (FK to profiles)
+├── name, phone, email
+├── address, instagram, notes
+└── created_at, updated_at
 
-appointments (scheduling system)
-├── client_id (reference to clients)
+-- Service Configuration
+service_categories (service groups)
+├── id (uuid, PK)
+├── user_id (FK to auth.users)
+├── name, description
+├── is_deleted, deleted_at
+└── created_at, updated_at
+
+services (individual services)
+├── id (uuid, PK)
+├── user_id (FK to auth.users)
+├── category_id (FK to service_categories)
+├── name, description, price
+├── duration_minutes, is_active
+├── is_deleted, deleted_at
+└── created_at, updated_at
+
+service_areas (regions with travel fees)
+├── id (uuid, PK)
+├── user_id (FK to auth.users)
+├── name, description, travel_fee
+├── is_deleted, deleted_at
+└── created_at, updated_at
+
+service_regional_prices (region-specific pricing overrides)
+├── id (uuid, PK)
+├── user_id (FK to auth.users)
+├── service_id (FK to services)
+├── service_area_id (FK to service_areas)
+├── price (overrides base service price)
+└── created_at, updated_at
+
+-- Appointments System
+appointments (scheduling and payment tracking)
+├── id (uuid, PK)
+├── user_id (FK to auth.users)
+├── client_id (FK to clients)
+├── service_area_id (FK to service_areas)
 ├── scheduled_date, scheduled_time
-├── status (confirmed, completed, cancelled)
-├── services (JSONB array)
+├── status (pending, confirmed, completed, cancelled)
+├── appointment_address, notes
 ├── is_custom_price (boolean flag)
 ├── travel_fee (decimal)
 ├── payment_total_appointment (total value)
-├── total_amount_paid (sum of payments)
-├── down_payment, remaining_payment
-└── notes, address
+├── payment_total_service (services only, no travel)
+├── total_amount_paid (sum of all payments)
+├── payment_down_payment_expected
+├── payment_down_payment_paid
+├── total_received (legacy, use total_amount_paid)
+├── payment_status (paid, pending)
+├── total_duration_minutes
+├── whatsapp_sent, whatsapp_sent_at, whatsapp_message
+├── last_edited_at, edited_by (FK to auth.users)
+└── created_at, updated_at
+
+appointment_services (appointment line items)
+├── id (uuid, PK)
+├── appointment_id (FK to appointments)
+├── service_id (FK to services)
+├── quantity (integer, min 1)
+├── unit_price, total_price
+└── created_at
 ```
 
 ### Key Business Rules

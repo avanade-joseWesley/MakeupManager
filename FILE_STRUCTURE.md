@@ -175,31 +175,96 @@ C:\GitHub\MakeupManager\│   │   ├── WhatsAppButton.tsx    # ✅ Opçã
 ## 🗄️ Banco de Dados (Supabase)
 
 ### Tabelas Principais
-- `profiles` - Perfis de usuário
+
+#### 👤 User Management
+- `profiles` - Perfis de usuário e informações do negócio
+  - Dados pessoais e profissionais
+  - Linked com `auth.users` (Supabase Auth)
+
+#### 👥 Client Management
 - `clients` - Clientes (RLS habilitado)
-- `appointments` - Agendamentos completos
+  - Informações de contato
+  - Histórico de relacionamento
+  - Isolamento por `user_id`
+
+#### 💼 Service Configuration
 - `service_categories` - Categorias de serviços
 - `services` - Serviços disponíveis
+  - Preço base, duração, descrição
+  - Soft delete (is_deleted flag)
 - `service_areas` - Áreas de atendimento
+  - Travel fees por região
 - `service_regional_prices` - Preços por região
+  - Sobrescreve preço base do serviço
+
+#### 📅 Appointments System
+- `appointments` - Agendamentos completos
+  - Scheduling, status, pagamentos
+  - WhatsApp tracking
+  - Audit trail (edited_by, last_edited_at)
+- `appointment_services` - Line items do agendamento
+  - Relaciona serviços com agendamento
+  - Quantidade, preço unitário, total
 
 ### Campos Importantes de Appointments
+
 ```typescript
 {
+  // Identificação
+  id: UUID,
+  user_id: UUID,
   client_id: UUID,
+  service_area_id: UUID,
+  
+  // Agendamento
   scheduled_date: DATE,
   scheduled_time: TIME,
-  status: 'confirmed' | 'completed' | 'cancelled',
-  services: JSONB[],
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled',
+  appointment_address: TEXT,
+  notes: TEXT,
+  
+  // Pricing
   is_custom_price: BOOLEAN,
   travel_fee: DECIMAL,
-  payment_total_appointment: DECIMAL,
-  total_amount_paid: DECIMAL,
-  down_payment: DECIMAL,
-  remaining_payment: DECIMAL,
-  notes: TEXT,
-  address: TEXT
+  payment_total_service: DECIMAL,      // Só serviços
+  payment_total_appointment: DECIMAL,   // Total (serviços + travel)
+  
+  // Payment Tracking
+  total_amount_paid: DECIMAL,          // Soma de todos os pagamentos
+  payment_down_payment_expected: DECIMAL,
+  payment_down_payment_paid: DECIMAL,
+  payment_status: 'paid' | 'pending',
+  
+  // WhatsApp
+  whatsapp_sent: BOOLEAN,
+  whatsapp_sent_at: TIMESTAMP,
+  whatsapp_message: TEXT,
+  
+  // Metadata
+  total_duration_minutes: INTEGER,
+  last_edited_at: TIMESTAMP,
+  edited_by: UUID,
+  created_at: TIMESTAMP,
+  updated_at: TIMESTAMP
 }
+```
+
+### Relacionamentos Principais
+
+```
+profiles (1) ─┬─→ (N) service_categories
+              ├─→ (N) services
+              ├─→ (N) service_areas
+              ├─→ (N) service_regional_prices
+              ├─→ (N) clients
+              └─→ (N) appointments
+
+appointments (1) ──→ (N) appointment_services
+appointments (N) ──→ (1) clients
+appointments (N) ──→ (1) service_areas
+
+services (1) ──→ (N) service_regional_prices
+services (1) ──→ (N) appointment_services
 ```
 
 ## 🔄 Fluxo de Desenvolvimento

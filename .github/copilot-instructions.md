@@ -8,8 +8,10 @@ MakeupManager is a professional makeup artist's management system built with Rea
 ### Core Components
 - **Authentication**: Supabase Auth with user-scoped data isolation
 - **Client Management**: Full CRUD with search/filtering and WhatsApp integration
+- **Appointments System**: Complete scheduling with calendar view, status management, and payment tracking
+- **Financial Dashboard**: Revenue analysis, payment tracking, and performance metrics
 - **Service Configuration**: Hierarchical structure (categories → services → regional pricing)
-- **Price Calculator**: Complex pricing with regional overrides and optional fees
+- **Price Calculator**: Complex pricing with regional overrides, custom prices, and travel fees
 - **Settings**: User profile and business configuration management
 
 ### Data Model
@@ -19,13 +21,29 @@ profiles (user profiles)
 ├── service_categories (service groups)
 │   └── services (individual services with base pricing)
 └── service_regional_prices (region-specific pricing overrides)
+
 clients (customer database with user isolation)
+
+appointments (scheduling system)
+├── client_id (reference to clients)
+├── scheduled_date, scheduled_time
+├── status (confirmed, completed, cancelled)
+├── services (JSONB array)
+├── is_custom_price (boolean flag)
+├── travel_fee (decimal)
+├── payment_total_appointment (total value)
+├── total_amount_paid (sum of payments)
+├── down_payment, remaining_payment
+└── notes, address
 ```
 
 ### Key Business Rules
 - **Regional Pricing Priority**: Regional prices completely override base service prices (including travel fees)
 - **User Data Isolation**: All data scoped by `user_id` with Row Level Security (RLS)
 - **Brazilian Localization**: Phone formatting, currency (BRL), and Portuguese UI text
+- **Appointment Reminders**: WhatsApp reminders automatically sent for appointments within 7 days
+- **Custom Pricing**: Support for manual price override excluding travel fees
+- **Payment Tracking**: Complete payment flow with down payment, remaining, and total paid tracking
 
 ## Critical Developer Workflows
 
@@ -156,6 +174,9 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 - `src/lib/supabase.ts` - Database client and types
 
 ### Business Logic
+- `src/components/AppointmentsPage.tsx` - Appointments management with reminders
+- `src/components/CalendarPage.tsx` - Monthly calendar with appointment CRUD
+- `src/components/FinancialDashboard.tsx` - Financial metrics and reporting
 - `src/components/PriceCalculator.tsx` - Complex pricing calculations
 - `src/components/Settings.tsx` - Configuration management
 - `src/components/Clients.tsx` - Client CRUD operations

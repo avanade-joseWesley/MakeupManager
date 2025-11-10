@@ -8,10 +8,40 @@ Sistema completo de gestão para maquiladoras profissionais.
 
 ## 🚀 Funcionalidades Atuais
 
-- ✅ Gestão de Clientes (CRUD completo)
-- ✅ Calculadora de Preços
+### 👥 Gestão de Clientes
+- ✅ CRUD completo de clientes
+- ✅ Busca e filtros avançados
+- ✅ Integração WhatsApp
+- ✅ Histórico de atendimentos
+
+### 📅 Sistema de Agendamentos
+- ✅ Calendário mensal interativo
+- ✅ Criação e edição de agendamentos
+- ✅ Gestão de status (confirmado, completo, cancelado)
+- ✅ Destaque visual para agendamentos próximos (7 dias)
+- ✅ Lembretes automáticos via WhatsApp
+- ✅ Controle de pagamentos (entrada, restante, total pago)
+
+### 💰 Calculadora de Preços
+- ✅ Cálculo automático por serviços
+- ✅ Preços customizados
+- ✅ Taxas de deslocamento por região
+- ✅ Geração de orçamentos em PDF
+- ✅ Envio direto via WhatsApp
+
+### 📊 Dashboard Financeiro
+- ✅ Análise de receitas e despesas
+- ✅ Acompanhamento de pagamentos
+- ✅ Métricas de desempenho
+- ✅ Filtros por período
+
+### ⚙️ Configurações
 - ✅ Gestão de Serviços e Categorias
-- ✅ Preços Regionais
+- ✅ Preços Regionais com taxas de deslocamento
+- ✅ Perfil do usuário
+- ✅ Configurações de negócio
+
+### 🔐 Segurança & Infraestrutura
 - ✅ Integração com Supabase
 - ✅ Autenticação de Usuários
 - ✅ Row Level Security (RLS)
@@ -81,23 +111,37 @@ npm start        # Preview do build (http://127.0.0.1:4173/MakeupManager/)
 ```
 MakeupManager/
 ├── src/
-│   ├── components/         # Componentes React
-│   │   ├── Clients.tsx     # Gestão de clientes
-│   │   ├── Dashboard.tsx   # Dashboard principal
-│   │   ├── LoginForm.tsx   # Login/Autenticação
-│   │   ├── PriceCalculator.tsx  # Calculadora
-│   │   └── Settings.tsx    # Configurações
+│   ├── components/              # Componentes React
+│   │   ├── AppointmentsPage.tsx # Gestão de agendamentos
+│   │   ├── CalendarPage.tsx     # Calendário mensal
+│   │   ├── FinancialDashboard.tsx # Dashboard financeiro
+│   │   ├── Clients.tsx          # Gestão de clientes
+│   │   ├── ClientsPage.tsx      # Página de clientes
+│   │   ├── Dashboard.tsx        # Dashboard principal
+│   │   ├── LoginForm.tsx        # Login/Autenticação
+│   │   ├── PriceCalculator.tsx  # Calculadora de preços
+│   │   ├── Settings.tsx         # Configurações
+│   │   ├── PDFManager.tsx       # Geração de PDFs
+│   │   ├── WhatsAppButton.tsx   # Integração WhatsApp
+│   │   ├── NumericInput.tsx     # Input numérico formatado
+│   │   ├── ErrorBoundary.tsx    # Tratamento de erros
+│   │   └── Container.tsx        # Container wrapper
 │   ├── lib/
-│   │   └── supabase.ts     # Cliente Supabase
-│   ├── App.tsx             # App principal
-│   └── main.tsx            # Entry point
-├── database/               # Scripts SQL
+│   │   └── supabase.ts          # Cliente Supabase + tipos
+│   ├── App.tsx                  # App principal
+│   └── main.tsx                 # Entry point
+├── database/                    # Scripts SQL e migrações
+│   ├── migrations.sql           # Migrações principais
+│   ├── 001-fix-payment-status.sql
+│   ├── 002-add-total-amount-paid.sql
+│   ├── 003-add-payment-total-appointment.sql
+│   ├── 004-add-travel-fee-field.sql
 │   ├── create_clients_table.sql
 │   └── clients_rls.sql
-├── public/                 # Assets estáticos
-├── .env                    # Variáveis de ambiente (local)
-├── deploy.ps1              # Script de deploy
-└── vite.config.ts          # Configuração Vite
+├── public/                      # Assets estáticos
+├── .env                         # Variáveis de ambiente (local)
+├── deploy.ps1                   # Script de deploy
+└── vite.config.ts               # Configuração Vite
 ```
 
 ## 🔄 Fluxo de Deploy
